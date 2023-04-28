@@ -77,6 +77,9 @@ if __name__ == "__main__":
             for path in os.listdir(os.path.join(data_dir, "raw/videos/"))
             if path.split(".mp4")[0] in split_idx
         ]
+        for file_path in sub_video_files:
+            shutil.copy2(os.path.join(data_dir, "raw/videos/", file_path),
+                         os.path.join(out_dir, file_path))
         sub_survey = survey[[id in split_idx for id in survey.subjectid]]
         sub_survey.to_csv(
             os.path.join(data_dir, f"processed/{split}-survey-data.csv"), index=False
