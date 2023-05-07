@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import os
 from typing import Any, List
-import transforms
+import data_loading.transforms as transforms
 import concurrent.futures
 import PIL
 import torchvision
@@ -55,7 +55,7 @@ class VideoLabelDataset(Dataset):
         label = self.labels[index]
         if self.transform:
             video = self.transform(video)
-        return self.ids[index], video, label
+        return self.ids[index], video, torch.tensor(label)
     
     def load_videos(self, video_transformer: transforms.VideoFilePathToTensor):
         """
