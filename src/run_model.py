@@ -28,6 +28,7 @@ args = argp.parse_args()
 
 # Save the device
 device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
+print(device)
 video_transformer = transforms.VideoFilePathToTensor(max_len=35, fps=5, padding_mode='last')
 H, W = 256, 256
 transforms = torchvision.transforms.Compose([
@@ -70,14 +71,17 @@ elif args.function == 'train':
     
     trainer = trainer.Trainer(model=model,  train_dataloader=train_dl, 
     test_dataloader=test_dl, config=train_config, val_dataloader=val_dl, median_freq_weights=True)
+    train_losses = []
+    val_losses = []
     for epoch in range(args.max_epochs):
         print(epoch)
-        trainer.train(split='train', step=epoch)
-        trainer.train(split='val', step=epoch)
+        train_losses.append(trainer.train(split='train', step=epoch))
+        val_losses.append(trainer.train(split='val', step=epoch))
     torch.save(model.state_dict(), args.writing_params_path)
+    # write csv of losses
     with open(args.loss_path, 'w') as f:
-        for loss in trainer.losses:
-            f.write(f"{loss[0]},{loss[1]}\n")
+        for train_loss, val_loss in zip(train_losses, val_losses):
+            f.write(f"{train_loss},{val_loss}\n")
 
 elif args.function == 'evaluate':
     train_dl, val_dl, test_dl = dataloaders.get_vid_data_loaders(

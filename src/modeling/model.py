@@ -7,7 +7,6 @@ from torch.utils.data import Dataset
 import cv2
 import numpy as np
 import pandas as pd
-from spacecutter.losses import CumulativeLinkLoss
 
 
 class BaseVideoModel(torch.nn.Module):
