@@ -68,7 +68,7 @@ elif args.function == 'train':
 
     
     trainer = trainer.Trainer(model=model,  train_dataloader=train_dl, 
-    test_dataloader=test_dl, config=train_config, val_dataloader=val_dl)
+    test_dataloader=test_dl, config=train_config, val_dataloader=val_dl, median_freq_weights=True)
     for epoch in range(args.max_epochs):
         print(epoch)
         trainer.train(split='train', step=epoch)

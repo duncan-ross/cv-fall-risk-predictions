@@ -44,7 +44,7 @@ class TrainerConfig:
 
 class Trainer:
 
-    def __init__(self, model, train_dataloader, config, val_dataloader=None, test_dataloader=None):
+    def __init__(self, model, train_dataloader, config, val_dataloader=None, test_dataloader=None, median_freq_weights:bool = False):
         self.model = model
         self.train_dataloader = train_dataloader
         self.test_dataloader = test_dataloader
@@ -59,6 +59,8 @@ class Trainer:
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
         
+        if median_freq_weights:
+            self.median_freq_weights = calculate_weights(self.train_dataloader, self.device)
 
     def save_checkpoint(self):
         if self.config.ckpt_path is not None:
@@ -102,7 +104,7 @@ class Trainer:
             else:
                 model.eval()
             with torch.set_grad_enabled(is_train):
-                logits, loss = model(x, y)
+                logits, loss = model(x, y, median_freq_weights=self.median_freq_weights)
                 loss = loss.mean() # collapse all losses if they are scattered on multiple gpus
                 losses.append(loss.item())
             if is_train:

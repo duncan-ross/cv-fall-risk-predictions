@@ -50,15 +50,16 @@ class BaseVideoModel(torch.nn.Module):
         x = self.activation(x)
         x = self.linear2(x)
         output = x
+        output = torch.nn.functional.softmax(output, dim=1)
 
         loss = None
         if targets is not None:
             # cross entropy loss- only can do with one output column. targets as int of shape (N,)
             targets = targets.reshape(-1).long()
-            loss = CumulativeLinkLoss()(output, targets.view(-1,1))
-        # return softmax of output. Will be used for evaluation but not training
-        with torch.no_grad():
-            output = torch.nn.functional.softmax(output, dim=1)
+            if median_freq_weights is not None:
+                loss = torch.nn.CumulativeLinkLoss(class_weights=median_freq_weights)(output, targets.view(-1,1))
+            else:
+                loss = torch.nn.CumulativeLinkLoss()(output, targets.view(-1,1))
         return output, loss
 
 
@@ -100,15 +101,16 @@ class ResnetLSTM(torch.nn.Module):
         x = x[:, -1, :]
         x = self.layer1(x)
         output = self.layer2(x)
+        output = torch.nn.functional.softmax(output, dim=1)
 
         loss = None
         if targets is not None:
             # cross entropy loss- only can do with one output column. targets as int of shape (N,)
             targets = targets.reshape(-1).long()
-            loss = CumulativeLinkLoss()(output, targets.view(-1,1))
-        # return softmax of output. Will be used for evaluation but not training
-        with torch.no_grad():
-            output = torch.nn.functional.softmax(output, dim=1)
+            if median_freq_weights is not None:
+                loss = torch.nn.CumulativeLinkLoss(class_weights=median_freq_weights)(output, targets.view(-1,1))
+            else:
+                loss = torch.nn.CumulativeLinkLoss()(output, targets.view(-1,1))
         return output, loss
 
 
@@ -133,7 +135,7 @@ class ResnetTransformer(torch.nn.Module):
             self.linear1 = nn.Linear(512*L, hidden_size)
             self.linear2 = nn.Linear(hidden_size, num_outputs)
 
-        def forward(self, x: torch.Tensor,  targets: Any = None) -> torch.Tensor:
+        def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
             """
             Args:
                 x (torch.Tensor): Video tensor of shape (N X C x L x H x W)
@@ -154,15 +156,16 @@ class ResnetTransformer(torch.nn.Module):
             x = self.linear1(x)
             x = torch.relu(x)
             output = self.linear2(x)
+            output = torch.nn.functional.softmax(output, dim=1)
 
 
             loss = None
             if targets is not None:
                 # cross entropy loss- only can do with one output column. targets as int of shape (N,)
                 targets = targets.reshape(-1).long()
-                loss = CumulativeLinkLoss()(output, targets.view(-1, 1))
-            # return softmax of output. Will be used for evaluation but not training
-            with torch.no_grad():
-                output = torch.nn.functional.softmax(output, dim=1)
+                if median_freq_weights is not None:
+                    loss = CumulativeLinkLoss(class_weights=median_freq_weights)(output, targets.view(-1,1))
+                else:
+                    loss = torch.nn.CumulativeLinkLoss()(output, targets.view(-1,1))
             return output, loss
             
