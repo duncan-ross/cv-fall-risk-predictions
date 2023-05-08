@@ -28,7 +28,7 @@ class BaseVideoModel(torch.nn.Module):
         self.linear2 = torch.nn.Linear(16, num_outputs)
 
     
-    def forward(self, x: torch.Tensor,  targets: Any = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         """
         Args:
             x (torch.Tensor): Video tensor of shape (N X C x L x H x W)
@@ -57,9 +57,9 @@ class BaseVideoModel(torch.nn.Module):
             # cross entropy loss- only can do with one output column. targets as int of shape (N,)
             targets = targets.reshape(-1).long()
             if median_freq_weights is not None:
-                loss = torch.nn.CumulativeLinkLoss(class_weights=median_freq_weights)(output, targets.view(-1,1))
+                loss = CumulativeLinkLoss(class_weights=median_freq_weights)(output, targets.view(-1,1))
             else:
-                loss = torch.nn.CumulativeLinkLoss()(output, targets.view(-1,1))
+                loss = CumulativeLinkLoss()(output, targets.view(-1,1))
         return output, loss
 
 
@@ -70,19 +70,14 @@ class ResnetLSTM(torch.nn.Module):
         resnet_net = torchvision.models.resnet18(weights="DEFAULT")
         modules = list(resnet_net.children())[:-1]
         self.backbone = torch.nn.Sequential(*modules)
-        self.lstm = torch.nn.LSTM(512, 512, batch_first=True)
+        self.lstm = torch.nn.LSTM(512, 512, batch_first=True, bidirectional=True)
 
         # decoder for lstm fc layers
-        self.layer1 = nn.Sequential(
-            nn.Linear(512, 256),
-            nn.ReLU(inplace=True)
-        )
-        self.layer2 = nn.Sequential(
-            nn.Linear(256, num_outputs)
-        )
+        self.layer1 = nn.Linear(512*2, 256)
+        self.layer2 = nn.Linear(256, num_outputs)
         
     
-    def forward(self, x: torch.Tensor,  targets: Any = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         """
         Args:
             x (torch.Tensor): Video tensor of shape (N X C x L x H x W)
@@ -90,27 +85,24 @@ class ResnetLSTM(torch.nn.Module):
             torch.Tensor: Output vector of length D, Loss
         """
         N, C, L, H, W = x.shape
-        x = x.transpose(1, 2)
-        x = x.reshape(-1, x.shape[2], x.shape[3], x.shape[4])
+        x = x.view(-1, C, H, W)
         # apply resnet backbone but do not change weights
         with torch.no_grad():
             x = self.backbone(x)
         x = x.reshape(N, L, -1)
-        x, _ = self.lstm(x)
-
-        x = x[:, -1, :]
+        x, hidden = self.lstm(x)
+        x = x.mean(dim=1)  # take the mean over the frames to get one vector per video
         x = self.layer1(x)
+        x = torch.nn.functional.relu(x)
         output = self.layer2(x)
-        output = torch.nn.functional.softmax(output, dim=1)
 
         loss = None
         if targets is not None:
-            # cross entropy loss- only can do with one output column. targets as int of shape (N,)
             targets = targets.reshape(-1).long()
             if median_freq_weights is not None:
-                loss = torch.nn.CumulativeLinkLoss(class_weights=median_freq_weights)(output, targets.view(-1,1))
+                loss = CumulativeLinkLoss(class_weights=median_freq_weights)(output, targets.view(-1,1))
             else:
-                loss = torch.nn.CumulativeLinkLoss()(output, targets.view(-1,1))
+                loss = CumulativeLinkLoss()(output, targets.view(-1,1))
         return output, loss
 
 
@@ -156,7 +148,16 @@ class ResnetTransformer(torch.nn.Module):
             x = self.linear1(x)
             x = torch.relu(x)
             output = self.linear2(x)
-            output = torch.nn.functional.softmax(output, dim=1)
+            # pass to sigmoid to get probabilities
+            output = torch.sigmoid(output)
+
+            # modified_target = torch.zeros_like(output)
+            # # Fill in ordinal target function, i.e. 0 -> [1,0,0,...]
+            # for i in range(modified_target.shape[0]):
+            #     modified_target[i,:int(targets[i])+1] = 1
+            # loss = (nn.MSELoss(reduction='none')(output, modified_target) * median_freq_weights).sum()
+
+            # output = torch.nn.functional.softmax(output, dim=1)
 
 
             loss = None
@@ -164,8 +165,12 @@ class ResnetTransformer(torch.nn.Module):
                 # cross entropy loss- only can do with one output column. targets as int of shape (N,)
                 targets = targets.reshape(-1).long()
                 if median_freq_weights is not None:
-                    loss = CumulativeLinkLoss(class_weights=median_freq_weights)(output, targets.view(-1,1))
+                    # binary cross entropy with class weights torch logits
+                    loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
                 else:
-                    loss = torch.nn.CumulativeLinkLoss()(output, targets.view(-1,1))
+                    loss = torch.nn.CrossEntropyLoss()(output, targets)
+            # softmax but do not do gradient
+            with torch.no_grad():
+                output = torch.nn.functional.softmax(output, dim=1)
             return output, loss
             

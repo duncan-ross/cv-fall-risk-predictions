@@ -143,11 +143,14 @@ class Trainer:
         return np.mean(losses)
 
 
-def calculate_weights(dataloader, device):
+def calculate_weights(dataloader, device, cumulative: bool = False):
     """
     Calculate weights for each class based on median frequency balancing
     """
     unique, counts = np.unique(dataloader.dataset.labels[:,0], return_counts=True)
+    # cumulative sum of counts but in reverse order
+    if cumulative:
+        counts = np.flip(np.cumsum(np.flip(counts)))
     median = np.median(counts)
     class_weights = median / counts
     class_weights = torch.tensor(class_weights).to(device)

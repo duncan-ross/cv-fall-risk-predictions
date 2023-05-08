@@ -16,8 +16,8 @@ from tqdm import tqdm
 torch.manual_seed(0)
 argp = argparse.ArgumentParser()
 argp.add_argument('function', help="Choose train or evaluate") #TODO: add behavior for pretrain and eval
-argp.add_argument('--writing_params_path', type=str, help='Path to the writing params file', default="writing_params.params")
-argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="six_epochs.params")
+argp.add_argument('--writing_params_path', type=str, help='Path to the writing params file', default="transformer.params")
+argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="transformer.params")
 argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="predictions.txt", required=False)
 argp.add_argument('--loss_path', type=str, help='Path to the output losses', default="losses.txt", required=False)
 argp.add_argument('--max_epochs', type=int, help='Number of epochs to train for', default=5, required=False)
@@ -32,6 +32,7 @@ video_transformer = transforms.VideoFilePathToTensor(max_len=35, fps=5, padding_
 H, W = 256, 256
 transforms = torchvision.transforms.Compose([
             transforms.VideoResize([H, W]),
+            # transforms.RandomHorizontalFlip(),
         ])
                              
 
@@ -117,7 +118,5 @@ elif args.function == 'evaluate':
             predictions.append(({'id': subj_id, **dict(zip(pred_cols, pred.tolist())), **dict(zip(actual_cols, y.tolist()))}))
 
     pd.DataFrame(predictions).to_csv(args.outputs_path, index=False)
-    
-
 else:
     print("Invalid function name. Choose pretrain, finetune, or evaluate")     
