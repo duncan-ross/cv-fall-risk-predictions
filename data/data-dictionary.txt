@@ -1,0 +1,243 @@
+Age	What is your age in years? Please enter the number only.
+Height	What is your height? - Selected Choice
+Weight	What is your weight in pounds?
+Sex	What sex were you assigned at birth, on your original birth certificate?
+Gender	What is your gender identity? Gender identity is one's innermost concept of self as male, female, a blend of both or neither – how individuals perceive themselves and what they call themselves. One's gender identity can be the same or different from their sex assigned at birth.
+Ethnicity	What is your ethnicity? Check all that apply. - Selected Choice
+Ethnicity_7_TEXT	What is your ethnicity? Check all that apply. - Other - Text
+Country	List of Countries
+State	50 States, D.C. and Puerto Rico
+Education	What is the highest degree or level of school you have completed?
+Employment	What is your current employment status?
+Income	What is your total household income?
+Marital	What is your current marital status?
+Smoker	Are you a current smoker?
+Meditation	In the average week, how often do you practice meditation, mindfulness, or prayer meditation?
+sports	What sports do you participate in, if any? - Selected Choice
+sports_30_TEXT	What sports do you participate in, if any? - Other - Text
+MedicalConditions	Do you have any of the following medical conditions (select all that apply)? - Selected Choice
+MedicalConditions_14_TEXT	Do you have any of the following medical conditions (select all that apply)? - Total joint replacement in the ankle(s), knee(s), or hip(s), please specify: - Text
+MedicalConditions_15_TEXT	Do you have any of the following medical conditions (select all that apply)? - Orthopedic surgery within the past year, please specify: - Text
+MedicalConditions_16_TEXT	Do you have any of the following medical conditions (select all that apply)? - Other medical condition - Text
+MedicalConditions_PA	If you checked any of the above medical conditions, does it limit your physical activity participation?
+Global01	Please respond to each question or statement by marking one box per row. - In general, would you say your health is:
+Global02	Please respond to each question or statement by marking one box per row. - In general, would you say your quality of life is:
+Global03	Please respond to each question or statement by marking one box per row. - In general, how would you rate your physical health?
+Global04	Please respond to each question or statement by marking one box per row. - In general, how would you rate your mental health, including your mood and your ability to think?
+Global05	Please respond to each question or statement by marking one box per row. - In general, how would you rate your satisfaction with your social activities and relationships?
+Global09	Please respond to each question or statement by marking one box per row. - In general, please rate how well you carry out your usual social activities and roles. (This includes activities at home, at work and in your community, and responsibilities as a parent, child, spouse, employee, friend, etc.)
+Global06	To what extent are you able to carry out your everyday physical activities such as walking, climbing stairs, carrying groceries, or moving a chair?
+Global10	How often have you been bothered by emotional problems such as feeling anxious, depressed or irritable over the past 7 days?
+Global08	How would you rate your fatigue on average over the past 7 days?
+Global07	How would you rate your pain on average over the past 7 days?
+OA_check	Do you have a clinical diagnosis of knee osteoarthritis in at least one knee or hip (i.e. have had a doctor’s diagnosis of knee or hip osteoarthritis)?
+OA_joint	Please select the location(s) of your osteoarthritis:
+OA_surgery	Have you had a Total Knee or Hip Arthroplasty surgery or other knee or hip surgery after your diagnosis of osteoarthritis?
+OA_surgsched	Do you have a knee/hip replacement surgery scheduled for sometime in the next 6 months?
+OA_yrsdiag	How many years has it been since you were first clinically diagnosed with knee osteoarthritis?
+WOMAC_3_1	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Descending stairs
+WOMAC_3_2	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Ascending stairs
+WOMAC_3_3	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Rising from sitting
+WOMAC_3_4	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Standing
+WOMAC_3_5	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Bending to floor
+WOMAC_3_6	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Walking on even floor
+WOMAC_3_7	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Getting in/out of car
+WOMAC_3_8	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Going shopping
+WOMAC_3_9	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Putting on socks
+WOMAC_3_10	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Rising from bed
+WOMAC_3_11	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Taking off socks
+WOMAC_3_12	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Lying in bed
+WOMAC_3_13	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Getting in/out of bath
+WOMAC_3_14	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Sitting
+WOMAC_3_15	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Getting on/off toilet
+WOMAC_3_16	The following questions concern the amount of difficulty you have experienced due to osteoarthritis in your knee(s)/hip(s).
+
+ Rate your difficulty when performing the following activities... - Doing light domestic duties (cooking, dusting)
+WOMAC_1_1	The following questions concern the amount of pain you have experienced due to osteoarthritis in your knee(s)/hip(s). 
+Rate your pain in your knee(s)/hips(s) when... - Walking
+WOMAC_1_2	The following questions concern the amount of pain you have experienced due to osteoarthritis in your knee(s)/hip(s). 
+Rate your pain in your knee(s)/hips(s) when... - Climbing Stairs
+WOMAC_1_3	The following questions concern the amount of pain you have experienced due to osteoarthritis in your knee(s)/hip(s). 
+Rate your pain in your knee(s)/hips(s) when... - Sleeping at night
+WOMAC_1_4	The following questions concern the amount of pain you have experienced due to osteoarthritis in your knee(s)/hip(s). 
+Rate your pain in your knee(s)/hips(s) when... - Resting
+WOMAC_1_5	The following questions concern the amount of pain you have experienced due to osteoarthritis in your knee(s)/hip(s). 
+Rate your pain in your knee(s)/hips(s) when... - Standing
+WOMAC_2_1	The following questions concern the amount of stiffness you have experienced due to osteoarthritis in your knee(s)/hip(s).
+Rate your stiffness in your knee(s)/hip(s) in the... - Morning
+WOMAC_2_2	The following questions concern the amount of stiffness you have experienced due to osteoarthritis in your knee(s)/hip(s).
+Rate your stiffness in your knee(s)/hip(s) in the... - Evening
+mood	Please choose one (or more) expressions that best describe your current mood:
+stress	How would you rate your current level of stress?
+Fall_YN	Have you fallen in the past 12 months?
+Fall_Multiple	Have you had multiple falls in the past 12 months?
+Fall_.	Approximately how many falls have you had in the past 12 months? Please enter a number.
+Fall_Reason	If you have had a fall in the past 12 months, what was the activity of the most recent fall? - Selected Choice
+Fall_Reason_6_TEXT	If you have had a fall in the past 12 months, what was the activity of the most recent fall? - Other - Text
+Fall_Fracture	Did you fracture any bones due to the most recent fall?
+PAtracker	Do you use an app on your phone or a wearable device (i.e., watch or pedometer) that tracks your daily step count?
+usualPA	Would you say that past week is representative of your usual physical activity level?
+targetSteps	What is your target step count currently set at?
+stepCount	Please enter your average daily step count over the past 7 days.
+trackerActivity	Do you use an app on your phone or a wearable device (i.e., watch or pedometer) that tracks your daily active time?
+targetActiveTime	What is your target daily active time set at in minutes?
+activeTime	Please enter your average daily active time in minutes for the past 7 days.
+IPAQ_SF_1	Think about all the vigorous activities that you did in the last 7 days. Vigorous
+physical activities refer to activities that take hard physical effort and make you breathe
+much harder than normal. Think only about those physical activities that you did for at
+least 10 minutes at a time.
+
+During the last 7 days, on how many days did you do vigorous physical
+activities like heavy lifting, digging, aerobics, or fast bicycling? - Selected Choice
+IPAQ_SF_1_1_TEXT	Think about all the vigorous activities that you did in the last 7 days. Vigorous
+physical activities refer to activities that take hard physical effort and make you breathe
+much harder than normal. Think only about those physical activities that you did for at
+least 10 minutes at a time.
+
+During the last 7 days, on how many days did you do vigorous physical
+activities like heavy lifting, digging, aerobics, or fast bicycling? - Days per week - Text
+IPAQ_SF_2_2	How much time did you usually spend doing vigorous physical activities on one
+of those days? - Minutes per day
+IPAQ_SF_3	Think about all the moderate activities that you did in the last 7 days. Moderate
+activities refer to activities that take moderate physical effort and make you breathe
+somewhat harder than normal. Think only about those physical activities that you did
+for at least 10 minutes at a time.
+During the last 7 days, on how many days did you do moderate physical
+activities like carrying light loads, bicycling at a regular pace, or doubles tennis?
+Do not include walking. - Selected Choice
+IPAQ_SF_3_1_TEXT	Think about all the moderate activities that you did in the last 7 days. Moderate
+activities refer to activities that take moderate physical effort and make you breathe
+somewhat harder than normal. Think only about those physical activities that you did
+for at least 10 minutes at a time.
+During the last 7 days, on how many days did you do moderate physical
+activities like carrying light loads, bicycling at a regular pace, or doubles tennis?
+Do not include walking. - Days per week - Text
+IPAQ_SF_4_2	How much time did you usually spend doing moderate physical activities on one
+of those days? - Minutes per day
+IPAQ_SF_5	Think about the time you spent walking in the last 7 days. This includes at work and at
+home, walking to travel from place to place, and any other walking that you have done
+solely for recreation, sport, exercise, or leisure.
+During the last 7 days, on how many days did you walk for at least 10 minutes
+at a time? - Selected Choice
+IPAQ_SF_5_1_TEXT	Think about the time you spent walking in the last 7 days. This includes at work and at
+home, walking to travel from place to place, and any other walking that you have done
+solely for recreation, sport, exercise, or leisure.
+During the last 7 days, on how many days did you walk for at least 10 minutes
+at a time? - Days per week - Text
+IPAQ_SF_6_1	How much time did you usually spend walking on one of those days? - Hours per day
+IPAQ_SF_7_1	This question is about the time you spent sitting on weekdays during the last 7
+days. Include time spent at work, at home, while doing course work and during leisure
+time. This may include time spent sitting at a desk, visiting friends, reading, or sitting or
+lying down to watch television.
+During the last 7 days, how much time did you spend sitting on a week day? - Hours per day
+PES_1	Exercising is:
+PES_2	Exercising is:
+PES_3	Exercising is:
+PES_4	Exercising is:
+PES_5	Exercising is:
+PES_6	Exercising is:
+PES_7	Exercising is:
+amm_1	How much do you agree or disagree with the following statement?
+My current level of physical activity is unhealthy.
+amm_2	How much do you agree or disagree with the following statement?
+My current level of physical activity is helping me achieve or maintain a healthy body weight.
+amm_3	How beneficial is
+your current level of physical activity for your health?
+amm_4	How much does your current level of physical activity or physical inactivity increase or decrease your risk of disease?
+amm_5	How much is your current level of physical activity or physical inactivity strengthening or weakening your muscles?
+falling_1	Please rate your fear of falling:
+falling_2	Apart from being in a high place, in the past 12 months, have you been worried or afraid that you might fall?
+falling_3	Do you ever limit your activities, for example, what you do or where you go, because you are afraid of falling?
+SEE_1	How confident are you right now that you could exercise three times per week for 20 minutes if: - The weather was bothering you
+SEE_2	How confident are you right now that you could exercise three times per week for 20 minutes if: - You were bored by the program or activity
+SEE_3	How confident are you right now that you could exercise three times per week for 20 minutes if: - You felt pain when exercising
+SEE_4	How confident are you right now that you could exercise three times per week for 20 minutes if: - You had to exercise alone
+SEE_5	How confident are you right now that you could exercise three times per week for 20 minutes if: - You did not enjoy it
+SEE_6	How confident are you right now that you could exercise three times per week for 20 minutes if: - You were too busy with other activities
+SEE_7	How confident are you right now that you could exercise three times per week for 20 minutes if: - You felt tired
+SEE_8	How confident are you right now that you could exercise three times per week for 20 minutes if: - You felt stressed
+SEE_9	How confident are you right now that you could exercise three times per week for 20 minutes if: - You felt depressed
+difficult_scale	How easy or difficult was it for you to complete the sit-to-stand test portion of this study (including reading the instructions, performing the test, and uploading the video)?
+difficult_open	Was anything confusing or difficult about the sit-to-stand test portion of this study (including reading the instructions, performing the test, and uploading the video)?
+feedback_open	Is there any additional information you would like to share about your experience with this study in general?
+continue	Would you be willing to answer an additional set of questions (approximately 5 more minutes)?
+IllMind_1_resp	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Your body can heal itself on its own in many different circumstances.
+IllMind_2_cat	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Chronic illness negatively impacts nearly all parts of life.
+IllMind_3_adv	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Having a chronic illness means that your body isn’t doing its job.
+IllMind_4_cap	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Your body is able to cope with a chronic illness.
+IllMind_5_opp	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - A chronic illness can be an opportunity to make positive life changes
+IllMind_6_man	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - A chronic illness is manageable.
+IllMind_7_adv	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - If you have a chronic illness, it means your body has betrayed you.
+IllMind_8_opp	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Having a chronic illness allows you to find more meaning in life.
+IllMind_9_man	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - A chronic illness is something that can be dealt with.
+IllMind_10_resp	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - In general, your body has remarkable self-healing properties.
+IllMind_11_cat	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Having a chronic illness spoils many parts of life.
+IllMind_12_opp	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Having a chronic illness is a challenge that can make you stronger.
+IllMind_13_cap	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - In general, your body is able to handle a chronic illness.
+IllMind_14_cat	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - A chronic illness ruins most aspects of life.
+IllMind_15_cap	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Your body is designed to deal with and manage a chronic illness.
+IllMind_16_man	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - You can live a relatively normal life with a chronic illness.
+IllMind_17_adv	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Having a chronic illness means that your body has failed.
+IllMind_18_opp	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Fighting a chronic illness can be empowering.
+IllMind_19_resp	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Your body is able to heal itself from most conditions and diseases.
+IllMind_20_adv	Below are some statements about the body and chronic illness. Choose the option that best reflects how much you generally agree or disagree with each statement. There are no correct answers – we are only interested in your personal beliefs. - Your body is to blame if you have a chronic illness.
+PSAS_1	When you experience physical sensations during exercise (for example, sweating, being out of breath, or muscle fatigue), how discouraged do you feel?
+PSAS_2	When you experience physical sensations during exercise (for example, sweating, being out of breath, or muscle fatigue), how do you think the exercise is going?
+PSAS_3	When you experience physical sensations during exercise (for example, sweating, being out of breath, or muscle fatigue), do you think your body is getting stronger?
+PSAS_4	When you experience physical sensations during exercise (for example, sweating, being out of breath, or muscle fatigue), do you think the exercise is working for you?
+PSAS_5	When you experience physical sensations during exercise (for example, sweating, being out of breath, or muscle fatigue), do you think your body is weak or out of shape?
+PSAS_6	When you experience physical sensations during exercise (for example, sweating, being out of breath, or muscle fatigue), do you think the exercise is not working for you?
+PSAS_7	When you experience physical sensations during exercise (for example, sweating, being out of breath, or muscle fatigue), how likely are you to persist and continue the exercise?
+fatigue_1	Please read and choose a response. - My motivation is lower when I am fatigued.
+fatigue_2	Please read and choose a response. - Exercise brings on my fatigue.
+fatigue_3	Please read and choose a response. - I am easily fatigued.
+fatigue_4	Please read and choose a response. - Fatigue interferes with my physical functioning.
+fatigue_5	Please read and choose a response. - Fatigue causes frequent problems for me.
+fatigue_6	Please read and choose a response. - My fatigue prevents sustained physical functioning.
+fatigue_7	Please read and choose a response. - Fatigue interferes with carrying out certain duties and responsibilities.
+fatigue_8	Please read and choose a response. - Fatigue is among my most disabling symptoms.
+fatigue_9	Please read and choose a response. - Fatigue interferes with my work, family, or social life.
+SC0	WOMAC
+SC1	PASE
+SC2	Body is an Adversary
+SC3	Body is Capable
+SC4	Body is Responsive
+SC5	Illness is a Catastrophe
+SC6	Illness is Manageable
+SC7	GMH
+SC8	Illness is an Opportunity
+SC9	GPH
+Score	Score
+gc	gc
+subjectid	video
+WHISH	Y/N
