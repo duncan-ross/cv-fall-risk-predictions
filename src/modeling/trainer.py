@@ -27,7 +27,7 @@ class TrainerConfig:
     learning_rate = 3e-4
     betas = (0.9, 0.95)
     grad_norm_clip = 1.0
-    weight_decay = 0.1 # only applied on matmul weights
+    weight_decay = 0.01 # only applied on matmul weights
     # learning rate decay params: linear warmup followed by cosine decay to 10% of original
     lr_decay = False
     warmup_tokens = 1e6 # these two numbers come from the GPT-3 paper, but may not be good defaults elsewhere
@@ -44,7 +44,7 @@ class TrainerConfig:
 
 class Trainer:
 
-    def __init__(self, model, train_dataloader, config, val_dataloader=None, test_dataloader=None, median_freq_weights:bool = False):
+    def __init__(self, model, train_dataloader, config, val_dataloader=None, test_dataloader=None):
         self.model = model
         self.train_dataloader = train_dataloader
         self.test_dataloader = test_dataloader
@@ -59,8 +59,6 @@ class Trainer:
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
         
-        if median_freq_weights:
-            self.median_freq_weights = calculate_weights(self.train_dataloader, self.device)
 
     def save_checkpoint(self):
         if self.config.ckpt_path is not None:
@@ -104,7 +102,7 @@ class Trainer:
             else:
                 model.eval()
             with torch.set_grad_enabled(is_train):
-                logits, loss = model(x, y, median_freq_weights=self.median_freq_weights)
+                logits, loss = model(x, y)
                 loss = loss.mean() # collapse all losses if they are scattered on multiple gpus
                 losses.append(loss.item())
             if is_train:
