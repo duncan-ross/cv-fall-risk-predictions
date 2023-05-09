@@ -24,10 +24,10 @@ class TrainerConfig:
     # optimization parameters
     max_epochs = 10
     batch_size = 64
-    learning_rate = 3e-4
+    learning_rate = 2e-5
     betas = (0.9, 0.95)
     grad_norm_clip = 1.0
-    weight_decay = 0.01 # only applied on matmul weights
+    weight_decay = 0.1 # only applied on matmul weights
     # learning rate decay params: linear warmup followed by cosine decay to 10% of original
     lr_decay = False
     warmup_tokens = 1e6 # these two numbers come from the GPT-3 paper, but may not be good defaults elsewhere

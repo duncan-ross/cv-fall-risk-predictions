@@ -16,9 +16,9 @@ from tqdm import tqdm
 torch.manual_seed(0)
 argp = argparse.ArgumentParser()
 argp.add_argument('function', help="Choose train or evaluate") #TODO: add behavior for pretrain and eval
-argp.add_argument('--writing_params_path', type=str, help='Path to the writing params file', default="transformer.params")
-argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="transformer.params")
-argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="predictions.txt", required=False)
+argp.add_argument('--writing_params_path', type=str, help='Path to the writing params file', default="best_transformer.params")
+argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="epoch_3.params")
+argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="epoch_3.csv", required=False)
 argp.add_argument('--loss_path', type=str, help='Path to the output losses', default="losses.txt", required=False)
 argp.add_argument('--max_epochs', type=int, help='Number of epochs to train for', default=5, required=False)
 argp.add_argument('--learning_rate', type=float, help='Learning rate', default=2e-5, required=False)
@@ -73,13 +73,20 @@ elif args.function == 'train':
     test_dataloader=test_dl, config=train_config, val_dataloader=val_dl, median_freq_weights=True)
     train_losses = []
     val_losses = []
+    best_val_loss = np.inf
     for epoch in range(args.max_epochs):
         print(epoch)
         train_losses.append(trainer.train(split='train', step=epoch))
-        val_losses.append(trainer.train(split='val', step=epoch))
-    torch.save(model.state_dict(), args.writing_params_path)
+        val_loss = trainer.train(split='val', step=epoch)
+        val_losses.append(val_loss)
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            print("Saving model after epoch", epoch)
+            torch.save(model.state_dict(), args.writing_params_path)
     # write csv of losses
     with open(args.loss_path, 'w') as f:
+        for train_loss, val_loss in zip(train_losses, val_losses):
+            f.write(f"{train_loss},{val_loss}\n")
         for train_loss, val_loss in zip(train_losses, val_losses):
             f.write(f"{train_loss},{val_loss}\n")
 
@@ -111,7 +118,7 @@ elif args.function == 'evaluate':
 
     pbar = tqdm(enumerate(test_dl), total=len(test_dl)) 
     # pred_cols = [f'pred_{c}' for c in dataset.targets_sentence.columns] + [f'pred_word_{c}' for c in dataset.targets_words.columns] + [f'pred_{c}' for c in dataset.targets_phones.columns]
-    pred_cols = ['pred_fall_risk']
+    pred_cols = ['pred_fall_risk_0', 'pred_fall_risk_1', 'pred_fall_risk_2']
     actual_cols = ['y_fall_risk']
     for it, (subj_id, x, y) in pbar:
         print(it)
@@ -119,8 +126,8 @@ elif args.function == 'evaluate':
         with torch.no_grad():
             x = x.to(device)
             pred = model(x)[0]
-            predictions.append(({'id': subj_id, **dict(zip(pred_cols, pred.tolist())), **dict(zip(actual_cols, y.tolist()))}))
+            predictions.append(({'id': subj_id, **dict(zip(pred_cols, pred.tolist()[0])), **dict(zip(actual_cols, y.tolist()[0]))}))
 
     pd.DataFrame(predictions).to_csv(args.outputs_path, index=False)
 else:
-    print("Invalid function name. Choose pretrain, finetune, or evaluate")     
+    print("Invalid function name. Choose train or evaluate")     

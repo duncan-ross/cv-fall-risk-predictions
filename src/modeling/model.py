@@ -148,7 +148,7 @@ class ResnetTransformer(torch.nn.Module):
             x = torch.relu(x)
             output = self.linear2(x)
             # pass to sigmoid to get probabilities
-            output = torch.sigmoid(output)
+            # output = torch.sigmoid(output)
 
             # modified_target = torch.zeros_like(output)
             # # Fill in ordinal target function, i.e. 0 -> [1,0,0,...]
