@@ -1,6 +1,10 @@
+from data_loading import dataloaders, transforms
+from modeling.trainer import calculate_weights
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegressionCV
+import torch
+
 
 vars_of_interest = {"Age": float, "Height": float, "Weight": float, "Sex": int}
 response_var = {"y_fall_risk": int}
@@ -18,9 +22,20 @@ X_test, y_test = get_rf_dataset("data/processed/test-survey-data.csv",
                                 y_var=response_var)
 ids = pd.read_csv("data/processed/test-survey-data.csv", usecols=["subjectid"])
 
-weights = np.array([1, 2, 3])
+device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
+video_transformer = transforms.VideoFilePathToTensor(max_len=35, fps=5, padding_mode='last')
+train_dl, _, _ = dataloaders.get_vid_data_loaders(
+    video_transformer=video_transformer,
+    batch_size=4,
+    val_batch_size=1,
+    test_batch_size=1,
+    transforms=transforms,
+    preload_videos=False,
+    labels=['y_fall_risk'],
+    num_workers=0
+)
+weights = calculate_weights(train_dl, device).numpy()
 weights_dict = {label: weight for label, weight in enumerate(weights)}
-np.savetxt("data/weights.txt", weights)
 
 logistic = LogisticRegressionCV(class_weight=weights_dict,
                                 max_iter=1000, random_state=231)

@@ -1,4 +1,6 @@
 import argparse
+from data_loading import dataloaders, transforms
+from modeling.trainer import calculate_weights
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, confusion_matrix
@@ -8,7 +10,6 @@ from torch.nn.functional import cross_entropy
 argp = argparse.ArgumentParser()
 argp.add_argument("--predictions_file", type=str, required=True)
 argp.add_argument("--loss", type=str, default="ce", required=False)
-argp.add_argument("--weight_file", type=str, default=None, required=False)
 
 if __name__ == "__main__":
     args = argp.parse_args()
@@ -21,9 +22,19 @@ if __name__ == "__main__":
         weights = np.ones(probs.shape[1], dtype=float)
         acc = accuracy_score(y_true, y_pred)
     elif args.loss == "weighted_ce":
-        if args.weight_file is None:
-            raise ValueError("loss of weighted_ce, but no weight file provided")
-        weights = np.loadtxt(args.weight_file, dtype=float)
+        device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
+        video_transformer = transforms.VideoFilePathToTensor(max_len=35, fps=5, padding_mode='last')
+        train_dl, _, _ = dataloaders.get_vid_data_loaders(
+            video_transformer=video_transformer,
+            batch_size=4,
+            val_batch_size=1,
+            test_batch_size=1,
+            transforms=transforms,
+            preload_videos=False,
+            labels=['y_fall_risk'],
+            num_workers=0
+        )
+        weights = calculate_weights(train_dl, device).numpy()
         num = (np.diag(conf_mat) * weights).sum()
         den = (np.bincount(y_true) * weights).sum()
         acc = num / den
@@ -31,7 +42,7 @@ if __name__ == "__main__":
         e = "loss argument must be one of 'ce' (cross entropy) "
         e += "or 'weighted_ce (weighted cross entropy)"
         raise ValueError(e)
-    print(weights)
+    print(f"Class Weights: {weights}")
     ce = cross_entropy(
         input=torch.FloatTensor(probs),
         target=torch.LongTensor(y_true),
