@@ -29,7 +29,7 @@ args = argp.parse_args()
 # Save the device
 device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
 print(device)
-video_transformer = transforms.VideoFilePathToTensor(max_len=35, fps=5, padding_mode='last')
+video_transformer = transforms.VideoFilePathToTensor(max_len=22*5, fps=5, padding_mode='zero')
 H, W = 256, 256
 transforms = torchvision.transforms.Compose([
             transforms.VideoResize([H, W]),
