@@ -16,10 +16,10 @@ from tqdm import tqdm
 torch.manual_seed(0)
 argp = argparse.ArgumentParser()
 argp.add_argument('function', help="Choose train or evaluate") #TODO: add behavior for pretrain and eval
-argp.add_argument('--writing_params_path', type=str, help='Path to the writing params file', default="best_transformer.params")
-argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="epoch_3.params")
-argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="epoch_3.csv", required=False)
-argp.add_argument('--loss_path', type=str, help='Path to the output losses', default="losses.txt", required=False)
+argp.add_argument('--writing_params_path', type=str, help='Path to the writing params file', default="flip_3.params")
+argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="flip_3.params")
+argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="flip_3.csv", required=False)
+argp.add_argument('--loss_path', type=str, help='Path to the output losses', default="flip_3.txt", required=False)
 argp.add_argument('--max_epochs', type=int, help='Number of epochs to train for', default=5, required=False)
 argp.add_argument('--learning_rate', type=float, help='Learning rate', default=2e-5, required=False)
 argp.add_argument('--seed', type=int, help='Number of epochs to train for', default=0, required=False)
@@ -33,7 +33,7 @@ video_transformer = transforms.VideoFilePathToTensor(max_len=35, fps=5, padding_
 H, W = 256, 256
 transforms = torchvision.transforms.Compose([
             transforms.VideoResize([H, W]),
-            # transforms.RandomHorizontalFlip(),
+            transforms.VideoRandomHorizontalFlip(),
         ])
                              
 
@@ -79,14 +79,13 @@ elif args.function == 'train':
         train_losses.append(trainer.train(split='train', step=epoch))
         val_loss = trainer.train(split='val', step=epoch)
         val_losses.append(val_loss)
+        print("Val loss:", val_loss)
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             print("Saving model after epoch", epoch)
             torch.save(model.state_dict(), args.writing_params_path)
     # write csv of losses
     with open(args.loss_path, 'w') as f:
-        for train_loss, val_loss in zip(train_losses, val_losses):
-            f.write(f"{train_loss},{val_loss}\n")
         for train_loss, val_loss in zip(train_losses, val_losses):
             f.write(f"{train_loss},{val_loss}\n")
 
