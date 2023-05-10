@@ -1,5 +1,6 @@
 import argparse
 from data_loading import dataloaders, transforms
+import torchvision
 from modeling.trainer import calculate_weights
 import numpy as np
 import pandas as pd
@@ -14,7 +15,7 @@ argp.add_argument("--loss", type=str, default="weighted_ce", required=False)
 if __name__ == "__main__":
     args = argp.parse_args()
     results = pd.read_csv(args.predictions_file)
-    probs = np.tile([.57, .25, .18], len(results)).reshape(-1,3) # Middle three columns
+    probs = np.array(results.iloc[:, 1:4]) # Middle three columns
     y_true = np.array(results.iloc[:, -1]).reshape(-1)
     y_pred = np.argmax(probs, axis=1)
     conf_mat = confusion_matrix(y_true=y_true, y_pred=y_pred)
@@ -24,6 +25,10 @@ if __name__ == "__main__":
     elif args.loss == "weighted_ce":
         device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
         video_transformer = transforms.VideoFilePathToTensor(max_len=35, fps=5, padding_mode='last')
+        transforms = torchvision.transforms.Compose([
+            transforms.VideoResize([256, 256]),
+            transforms.VideoRandomHorizontalFlip(),
+        ])
         train_dl, _, _ = dataloaders.get_vid_data_loaders(
             video_transformer=video_transformer,
             batch_size=4,

@@ -7,6 +7,7 @@ from torch._utils import _accumulate
 from torch.utils.data.dataset import Subset
 import warnings
 import numpy as np
+import torchvision
 
 from data_loading.datasets import VideoLabelDataset
 
@@ -14,6 +15,9 @@ def get_vid_data_loaders(video_transformer: Any, batch_size: int = 32, val_batch
 transforms: Any = None, preload_videos: bool = False, labels: List = ['y_fall_risk'], num_workers: int = 0) -> Tuple[DataLoader, DataLoader, DataLoader]:
     ds_dict = {}
     for ds in ['train', 'val', 'test']:
+        transforms = transforms if ds == 'train' else torchvision.transforms.Compose([
+                transforms.transforms[0]
+            ])
         dataset = VideoLabelDataset(
             tabular_csv=f'data/processed/{ds}-survey-data.csv', 
             video_folder=f'data/processed/{ds}-videos', 
