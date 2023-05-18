@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 import os
 from typing import Any, List
-import data_loading.transforms as transforms
+#import data_loading.transforms as transforms
+import transforms as transforms
 import concurrent.futures
 import PIL
 import torchvision
@@ -24,12 +25,12 @@ class VideoLabelDataset(Dataset):
                 on a video.
             preload_videos (bool): Whether to preload all videos into memory.
         """
-        df = pd.read_csv(tabular_csv)
         self.video_folder = video_folder
         self.transform = transform
         self.video_transformer = video_transformer
         self.preload_videos = preload_videos
 
+        df = pd.read_csv(tabular_csv)
         self.labels = df[labels].values
         self.ids = df['subjectid'].values
         # load videos into memory if desired
@@ -71,7 +72,68 @@ class VideoLabelDataset(Dataset):
                 self.ids
             ))
 
-if __name__ == '__main__':
+class MotionCaptureDataset(Dataset):
+    def __init__(self, video_folder: str, labels: List[str], transform:Any =None, 
+    video_transformer=transforms.VideoFilePathToTensor(), preload_videos: bool=True):
+        """
+        Args:
+            video_folder (string): Directory with all the videos.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+            video_transformer (callable, optional): Optional transform to be applied
+                on a video.
+            preload_videos (bool): Whether to preload all videos into memory.
+        """
+        # Iterate through the files in the root directory
+        file_names = []
+        for file_name in os.listdir(video_folder):
+            file_name_without_ext, _ = os.path.splitext(file_name)
+            if file_name_without_ext not in file_names:
+                file_names.append(file_name_without_ext)
+        
+        self.ids = file_names
+        self.video_folder = video_folder
+        self.transform = transform
+        self.video_transformer = video_transformer
+        self.preload_videos = preload_videos # Not possible atm.
+        self.labels = labels
+        self.videos = None
+
+    def __len__(self):
+        return len(self.ids)
+
+    def __getitem__(self, index: int):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tuple: (subject id, video, label) where label is an array of labels.
+        """
+
+        df = pd.read_csv(os.path.join(self.video_folder, self.ids[index] + '.csv'))
+        tabular = df[self.labels].values
+
+        if self.preload_videos:
+            video = self.videos[index]
+        else:
+            # TODO can we get away with not redefining this every time??
+            video_transformer = transforms.VideoFilePathToTensor(max_len=df.shape[0], fps=100, padding_mode='last')
+            video =  video_transformer(os.path.join(self.video_folder, self.ids[index] + '.mp4'))
+        
+        if self.transform:
+            video = self.transform(video)
+
+        try:
+            assert df.shape[0] == len(video)
+        except AssertionError:
+            print("Assertion Error: Number of rows mismatch!")
+            print("Number of rows in DataFrame:", df.shape[0])
+            print("Number of elements in 'video':", len(video))
+
+        return self.ids[index], video, torch.tensor(tabular)
+    
+
+if __name__ == '__main__SKIP':
     # test for VideoDataset
     video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=2, padding_mode='last')
     dataset = VideoLabelDataset(
@@ -83,6 +145,26 @@ if __name__ == '__main__':
             # transforms.VideoRandomCrop([512, 512]),
             # transforms.VideoResize([256, 256]),
         ]),
+        preload_videos=False
+    )
+    subj_id, video, label = dataset[0]
+    print(subj_id, video.size(), label)
+    frame1 = torchvision.transforms.ToPILImage()(video[:, 29, :, :])
+    frame2 = torchvision.transforms.ToPILImage()(video[:, 19, :, :])
+    frame1.show()
+    frame2.show()
+
+    test_loader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
+    
+    for subj_id, videos, labels in test_loader:
+        print(subj_id, videos.size(), label)
+
+if __name__ == '__main__':
+    # test for VideoDataset
+    dataset = MotionCaptureDataset(
+        video_folder='data/motion_capture', 
+        labels=['pelvis_tilt', 'ankle_angle_l'], 
+        transform=torchvision.transforms.Compose([]),
         preload_videos=False
     )
     subj_id, video, label = dataset[0]
