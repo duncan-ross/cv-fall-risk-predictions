@@ -111,22 +111,22 @@ class ResnetLSTM(torch.nn.Module):
 
 
 class ResnetTransformer(torch.nn.Module):
-        def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6):
+        def __init__(self, num_outputs, L, H, W, hidden_size=1024, num_heads=8, num_layers=6):
             super(ResnetTransformer, self).__init__()
-            resnet_net = torchvision.models.resnet18(weights="DEFAULT")
+            resnet_net = torchvision.models.resnet50(weights="DEFAULT")
             modules = list(resnet_net.children())[:-1]
             self.backbone = torch.nn.Sequential(*modules)
 
 
             self.transformer_encoder = nn.TransformerEncoder(
-                nn.TransformerEncoderLayer(d_model=512, nhead=num_heads),
+                nn.TransformerEncoderLayer(d_model=2048, nhead=num_heads),
                 num_layers=num_layers,
-                norm=nn.LayerNorm(512)
+                norm=nn.LayerNorm(2048)
             )
 
 
             # Linear layers
-            self.linear1 = nn.Linear(512*L, hidden_size)
+            self.linear1 = nn.Linear(2048*L, hidden_size)
             self.linear2 = nn.Linear(hidden_size, num_outputs)
 
         def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
@@ -146,23 +146,14 @@ class ResnetTransformer(torch.nn.Module):
             x = x.view(N, L, -1)
             x = self.transformer_encoder(x)
             # Now we have a tensor of shape (N, L, -1)
-            x = x.transpose(1, 2)
             x = x.reshape(N, -1)
 
 
             x = self.linear1(x)
+                        
+            x = torch.nn.functional.dropout(x, p=0.5, training=self.training)
             x = torch.relu(x)
             output = self.linear2(x)
-            # pass to sigmoid to get probabilities
-            # output = torch.sigmoid(output)
-
-            # modified_target = torch.zeros_like(output)
-            # # Fill in ordinal target function, i.e. 0 -> [1,0,0,...]
-            # for i in range(modified_target.shape[0]):
-            #     modified_target[i,:int(targets[i])+1] = 1
-            # loss = (nn.MSELoss(reduction='none')(output, modified_target) * median_freq_weights).sum()
-
-            # output = torch.nn.functional.softmax(output, dim=1)
 
 
             loss = None
@@ -170,7 +161,6 @@ class ResnetTransformer(torch.nn.Module):
                 # cross entropy loss- only can do with one output column. targets as int of shape (N,)
                 targets = targets.reshape(-1).long()
                 if median_freq_weights is not None:
-                    # binary cross entropy with class weights torch logits
                     loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
                 else:
                     loss = torch.nn.CrossEntropyLoss()(output, targets)
@@ -216,7 +206,7 @@ class BaseTransformer(torch.nn.Module):
             x = self.activation(x)
             x = self.pool(x)
             x = x.view(N, L, -1).permute(1, 0, 2)
-            x = self.transformer_encoder(x)
+            x = self.transformer_encoder(x, )
             x = x.permute(1, 2, 0).contiguous().view(N, -1, 1, 1)
 
             x = self.adaptive_maxpool(x).view(N, -1)

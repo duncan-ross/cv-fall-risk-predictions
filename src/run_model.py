@@ -19,12 +19,12 @@ argp = argparse.ArgumentParser()
 argp.add_argument('function', help="Choose train or evaluate") #TODO: add behavior for pretrain and eval
 argp.add_argument('--writing_params_path', type=str, help='Path to the writing params file', default="base.params")
 argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="base.params")
-argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="base.csv", required=False)
+argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="new.csv", required=False)
 argp.add_argument('--loss_path', type=str, help='Path to the output losses', default="base.txt", required=False)
 argp.add_argument('--max_epochs', type=int, help='Number of epochs to train for', default=5, required=False)
 argp.add_argument('--learning_rate', type=float, help='Learning rate', default=2e-5, required=False)
 argp.add_argument('--seed', type=int, help='Number of epochs to train for', default=0, required=False)
-argp.add_argument('--model_name', type=str, help='Name of model to use', default="Base", required=False)
+argp.add_argument('--model_name', type=str, help='Name of model to use', default="Transformer", required=False)
 args = argp.parse_args()
 
 if __name__ == '__main__':
