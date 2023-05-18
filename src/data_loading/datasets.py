@@ -117,7 +117,7 @@ class MotionCaptureDataset(Dataset):
             video = self.videos[index]
         else:
             # TODO can we get away with not redefining this every time??
-            video_transformer = transforms.VideoFilePathToTensor(max_len=df.shape[0], fps=100, padding_mode='last')
+            video_transformer = self.video_transformer.max_len = df.shape[0]
             video =  video_transformer(os.path.join(self.video_folder, self.ids[index] + '.mp4'))
         
         if self.transform:

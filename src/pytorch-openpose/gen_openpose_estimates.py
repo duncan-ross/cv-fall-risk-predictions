@@ -78,7 +78,7 @@ def process_video(video_file):
 
     # combine all frames
     df = pd.concat(df_list)
-    df['id'] = video_file.split('/')[-1].replace('.mp4', '')
+    df['subj_id'] = video_file.split('/')[-1].replace('.mp4', '')
 
     cap.release()
     cv2.destroyAllWindows()
