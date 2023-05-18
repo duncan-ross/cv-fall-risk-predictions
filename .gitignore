@@ -7,6 +7,5 @@
 *.mot
 *.sto
 *.trc
-data/motion_capture/
 expt/
 .DS_Store
