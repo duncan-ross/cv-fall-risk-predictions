@@ -1,3 +1,4 @@
+import sys
 import torch
 from torch.utils.data import Dataset 
 import cv2
@@ -74,7 +75,7 @@ class VideoLabelDataset(Dataset):
 
 class MotionCaptureDataset(Dataset):
     def __init__(self, video_folder: str, labels: List[str], transform:Any =None, 
-    video_transformer=transforms.VideoFilePathToTensor(), preload_videos: bool=True):
+    video_transformer=transforms.VideoFilePathToTensor(fps=50, padding_mode='last'), preload_videos: bool=True):
         """
         Args:
             video_folder (string): Directory with all the videos.
@@ -111,31 +112,46 @@ class MotionCaptureDataset(Dataset):
         """
 
         df = pd.read_csv(os.path.join(self.video_folder, self.ids[index] + '.csv'))
-        tabular = df[self.labels].values
+        tabular = torch.tensor(df[self.labels].values)
+        n, m = tabular.shape
+        reduced_rows = n // 2
+        tabular = tabular[:reduced_rows*2, :].view(reduced_rows, 2, m).mean(dim=1)
 
         if self.preload_videos:
             video = self.videos[index]
         else:
             # TODO can we get away with not redefining this every time??
-            video_transformer = self.video_transformer.max_len = df.shape[0]
+            self.video_transformer.max_len = df.shape[0]
             video =  video_transformer(os.path.join(self.video_folder, self.ids[index] + '.mp4'))
         
         if self.transform:
             video = self.transform(video)
 
         try:
-            assert df.shape[0] == len(video)
+            assert df.shape[0] == video.shape[1]
         except AssertionError:
             print("Assertion Error: Number of rows mismatch!")
             print("Number of rows in DataFrame:", df.shape[0])
-            print("Number of elements in 'video':", len(video))
+            print("Number of elements in 'video':", video.shape[1])
+            sys.exit(0)
 
-        return self.ids[index], video, torch.tensor(tabular)
+        return self.ids[index], video, tabular
+    
+    def load_videos(self, video_transformer: transforms.VideoFilePathToTensor):
+        """
+        Loads all videos into memory.
+        """
+        with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() // 2) as executor:
+            video_folder = self.video_folder
+            self.videos = list(executor.map(
+                lambda id: video_transformer(os.path.join(video_folder, id + '.mp4')),
+                self.ids
+            ))
     
 
 if __name__ == '__main__SKIP':
     # test for VideoDataset
-    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=2, padding_mode='last')
+    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=50, padding_mode='last')
     dataset = VideoLabelDataset(
         tabular_csv='data/processed/val-survey-data.csv', 
         video_folder='data/processed/val-videos', 
@@ -161,20 +177,16 @@ if __name__ == '__main__SKIP':
 
 if __name__ == '__main__':
     # test for VideoDataset
+    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=50, padding_mode='last')
     dataset = MotionCaptureDataset(
         video_folder='data/motion_capture', 
-        labels=['pelvis_tilt', 'ankle_angle_l'], 
+        labels=['pelvis_tilt', 'ankle_angle_l'],
+        video_transformer=video_transformer,
         transform=torchvision.transforms.Compose([]),
         preload_videos=False
     )
     subj_id, video, label = dataset[0]
-    print(subj_id, video.size(), label)
-    frame1 = torchvision.transforms.ToPILImage()(video[:, 29, :, :])
-    frame2 = torchvision.transforms.ToPILImage()(video[:, 19, :, :])
-    frame1.show()
-    frame2.show()
-
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
-    
     for subj_id, videos, labels in test_loader:
-        print(subj_id, videos.size(), label)
+        #print(subj_id, videos.size(), label)
+        continue

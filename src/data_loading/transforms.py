@@ -51,7 +51,6 @@ class VideoFilePathToTensor(object):
         sample_factor = 1
         if self.fps:
             old_fps = cap.get(cv2.CAP_PROP_FPS)  # fps of video
-            print("OLD FPS: ", old_fps)
             sample_factor = int(old_fps / self.fps)
             assert(sample_factor >= 1)
         
