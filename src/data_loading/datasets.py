@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import os
 from typing import Any, List
-#import data_loading.transforms as transforms
-import transforms as transforms
+import data_loading.transforms as transforms
+#import transforms as transforms
 import concurrent.futures
 import PIL
 import torchvision
@@ -122,7 +122,7 @@ class MotionCaptureDataset(Dataset):
         else:
             # TODO can we get away with not redefining this every time??
             self.video_transformer.max_len = df.shape[0]
-            video =  video_transformer(os.path.join(self.video_folder, self.ids[index] + '.mp4'))
+            video =  self.video_transformer(os.path.join(self.video_folder, self.ids[index] + '.mp4'))
         
         if self.transform:
             video = self.transform(video)

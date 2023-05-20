@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 import torchvision
 
-from data_loading.datasets import VideoLabelDataset
+from data_loading.datasets import VideoLabelDataset, MotionCaptureDataset
 
 def get_vid_data_loaders(video_transformer: Any, batch_size: int = 32, val_batch_size: int = 16, test_batch_size: int = 16, 
 transforms: Any = None, preload_videos: bool = False, labels: List = ['y_fall_risk'], num_workers: int = 0) -> Tuple[DataLoader, DataLoader, DataLoader]:
@@ -36,7 +36,7 @@ transforms: Any = None, preload_videos: bool = False, labels: List = ['y_fall_ri
 
 
 def get_mc_data_loaders(video_transformer: Any, batch_size: int = 32, val_batch_size: int = 16, test_batch_size: int = 16, 
-transforms: Any = None, preload_videos: bool = False, labels: List = ['y_fall_risk'], num_workers: int = 0) -> Tuple[DataLoader, DataLoader, DataLoader]:
+transforms: Any = None, preload_videos: bool = False, labels: List = ['pelvis_tilt', 'ankle_angle_l','ankle_angle_r','hip_adduction_r','hip_adduction_l'], num_workers: int = 0) -> Tuple[DataLoader, DataLoader, DataLoader]:
     ds_dict = {}
 
     for ds in ['train', 'val']:
@@ -44,13 +44,13 @@ transforms: Any = None, preload_videos: bool = False, labels: List = ['y_fall_ri
                 transforms.transforms[0]
             ])
         dataset = MotionCaptureDataset(
-            video_folder=f'data/motion_capture', 
-            labels=labels, 
+            video_folder='data/motion_capture', 
+            labels=labels,
             video_transformer=video_transformer,
-            transform=transforms,
+            transform=torchvision.transforms.Compose([]),
             preload_videos=preload_videos
         )
-        ds_dict['ds'] = DataLoader(dataset, 
+        ds_dict[ds] = DataLoader(dataset, 
         batch_size=batch_size if ds == 'train' else val_batch_size if ds == 'val' else test_batch_size, 
         shuffle=True, num_workers=num_workers)
 
