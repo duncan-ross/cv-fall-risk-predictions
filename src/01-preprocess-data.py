@@ -53,6 +53,7 @@ if __name__ == "__main__":
     # Remove copy warning
     pd.set_option("mode.chained_assignment", None)
     survey["y_fall_risk"] = survey.falling_1.apply(get_resp_bucket)
+    survey["y_fall_risk_binary"] = survey.y_fall_risk.apply(lambda x: int(x > 0))
     # Reinstate copy warning
     pd.set_option("mode.chained_assignment", "warn")
 
