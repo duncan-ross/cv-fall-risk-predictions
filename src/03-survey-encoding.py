@@ -35,7 +35,8 @@ if __name__ == "__main__":
         ]
         for col in encoding_cols:
             split_col = survey_data[col].apply(lambda x: str(x).split(","))
-            unique_vals = split_col.explode().unique()
+            unique_vals = survey_datasets["train"][col]\
+                .apply(lambda x: str(x).split(",")).explode().unique()
             for val in sorted(unique_vals):
                 survey_data[f"{col}_{val}"] = split_col\
                     .apply(lambda x: any([y == val for y in x]))\
