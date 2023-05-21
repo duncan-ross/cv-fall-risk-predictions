@@ -17,45 +17,44 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import multiprocessing
 
-class ResnetTransformer(torch.nn.Module):
-    def __init__(self, num_outputs, H, W, hidden_size=1024, num_heads=8, num_layers=6):
-        super(ResnetTransformer, self).__init__()
-        resnet_net = torchvision.models.resnet50(pretrained=True)
+class ResnetModel(torch.nn.Module):
+    def __init__(self, num_outputs, H, W, hidden_size=256, num_heads=2, num_layers=2):
+        super(ResnetModel, self).__init__()
+        resnet_net = torchvision.models.resnet18(pretrained=True)
         modules = list(resnet_net.children())[:-1]
         self.backbone = torch.nn.Sequential(*modules)
         self.num_outputs = num_outputs
 
-        self.transformer_encoder = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(d_model=2048, nhead=num_heads),
-            num_layers=num_layers,
-            norm=nn.LayerNorm(2048)
-        )
+        # self.transformer_encoder = nn.TransformerEncoder(
+        #     nn.TransformerEncoderLayer(d_model=2048, nhead=num_heads),
+        #     num_layers=num_layers,
+        #     norm=nn.LayerNorm(2048)
+        # )
 
         # Linear layers
-        self.linear1 = nn.Linear(2048, hidden_size)
+        self.linear1 = nn.Linear(512, hidden_size)
         self.linear2 = nn.Linear(hidden_size, self.num_outputs)
 
     def forward(self, x: torch.Tensor, targets: torch.Tensor = None, median_freq_weights: torch.Tensor = None) -> torch.Tensor:
         """
         Args:
-            x (torch.Tensor): Video tensor of shape (N x C x H x W)
-            targets (torch.Tensor): Label tensor of shape (N x L)
+            x (torch.Tensor): Frames tensor of shape (C x N x H x W)
+            targets (torch.Tensor): Label tensor of shape (N x num_outputs)
             median_freq_weights (torch.Tensor): Weights tensor of shape (num_classes,)
         Returns:
-            torch.Tensor: Output tensor of shape (N x L x num_outputs)
+            torch.Tensor: Output tensor of shape (N x num_outputs)
             torch.Tensor: Loss tensor
         """
-        N, C, L, H, W = x.shape
-        x = x.view(N * L, C, H, W)
+        C, N, H, W = x.shape
+        # N X C X H X W -> N X H X W X C
+        x = x.transpose(0,1)
 
         # Pass the input through the backbone and apply the transformer encoder
         with torch.no_grad():
             x = self.backbone(x)
-        x = x.view(N, L, -1)
-        x = self.transformer_encoder(x)
 
-        # Now we have a tensor of shape (N, L, -1)
-        x = x.view(N * L, -1)
+        # Now we have a tensor of shape (N, -1)
+        x = x.view(N, -1)
         x = self.linear1(x)
         x = torch.nn.functional.dropout(x, p=0.5, training=self.training)
         x = torch.relu(x)
@@ -63,17 +62,8 @@ class ResnetTransformer(torch.nn.Module):
 
         loss = None
         if targets is not None:
-            # Reshape output and targets to match the loss function requirements
-            output = output.view(N, L, -1)
-            targets = targets.view(N * L)
-
-            if median_freq_weights is not None:
-                loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output.view(-1, self.num_outputs), targets)
-            else:
-                loss = torch.nn.CrossEntropyLoss()(output.view(-1, self.num_outputs), targets)
-
-        # Apply softmax to get probabilities for each frame
-        output = torch.nn.functional.softmax(output, dim=2)
+            # MSE
+            loss = torch.nn.functional.mse_loss(output, targets)
 
         return output, loss
 
@@ -84,7 +74,7 @@ if __name__ == '__main__':
     # Save the device
     device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
     print(device)
-    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=50, padding_mode='last')
+    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=5, padding_mode='last')
     H, W = 256, 256
     transforms = torchvision.transforms.Compose([
                 transforms.VideoResize([H, W]),
@@ -113,7 +103,7 @@ if __name__ == '__main__':
     #     print(subj_id, videos.size(), labels)
     #     continue
 
-    model = ResnetTransformer(num_outputs=5, H=H, W=W)
+    model = ResnetModel(num_outputs=5, H=H, W=W)
     trainer = trainer.Trainer(model=model,  train_dataloader=train_dl, 
                               
     test_dataloader=test_dl, config=train_config, val_dataloader=val_dl, median_freq_weights=False)

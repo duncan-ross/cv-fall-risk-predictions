@@ -61,6 +61,8 @@ class Trainer:
         
         if median_freq_weights:
             self.median_freq_weights = calculate_weights(self.train_dataloader, self.device)
+        else:
+            self.median_freq_weights = None
 
     def save_checkpoint(self):
         if self.config.ckpt_path is not None:

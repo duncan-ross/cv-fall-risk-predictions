@@ -193,8 +193,8 @@ class BaseTransformer(torch.nn.Module):
             model_dict = util.transfer(self.model, torch.load('model/body_pose_model.pth'))
             self.model.load_state_dict(model_dict)
             self.model = self.model.to(device)
-            # modules = list(self.model.children())[:-1]
-            # self.backbone = torch.nn.Sequential(*modules)
+            modules = list(self.model.children())[:-1]
+            self.backbone = torch.nn.Sequential(*modules)
 
             # reduce the number of channels
             self.rnn = nn.GRU(input_size=38*23*23, hidden_size=64, num_layers=2, batch_first=True, bidirectional=True)
@@ -213,18 +213,18 @@ class BaseTransformer(torch.nn.Module):
             """
             N, C, L, H, W = x.shape
             x = x.transpose(1, 2)
-            x = x.reshape(-1, x.shape[2], x.shape[3], x.shape[4])
-            data = process_image(x).to(self.device)
+            out = x.reshape(-1, x.shape[2], x.shape[3], x.shape[4])
+            data = process_image(out).to(self.device)
 
             out, _ = self.model(data)
             # out is (N*L, 38, 17, 17)
             # COMPLETE CODE TO GET OUTPUT which should be (N) dimensional
             # linear, relu, linear
-            output, hid = self.rnn(out.reshape(N, L, -1))
+            out = out.reshape(N, L, -1)
+            output, hid = self.rnn(out)
 
             hid = hid.reshape(N, -1)
             output = self.fc1(hid)
-            print(output)
             loss = None
             if targets is not None:
                 # cross entropy loss- only can do with one output column. targets as int of shape (N,)
@@ -237,33 +237,11 @@ class BaseTransformer(torch.nn.Module):
             # softmax but do not do gradient
             with torch.no_grad():
                 output = torch.nn.functional.softmax(output, dim=1)
+            print(output)
             return output, loss
 
 # Helper function to proc image for openpose
 def process_image(x):
-    # x = x.cpu().detach().numpy()
-    # x = np.transpose(x, (0, 2, 3, 1))
-    # x = np.array([np.array(Image.fromarray((frame * 255).astype(np.uint8)).convert('RGB')) for frame in x])
-
-    # boxsize = 368
-    # stride = 8
-    # padValue = 128
-    # multiplier = 0.5 * boxsize / x.shape[1]
-
-    # scale = multiplier
-    # output_shape = (x.shape[2] // 2, x.shape[1] // 2)
-    # imageToTest = np.array([np.array(Image.fromarray(frame).resize(output_shape, resample=Image.BICUBIC)) for frame in x])
-    # pad_height = stride - (imageToTest.shape[1] % stride)
-    # pad_width = stride - (imageToTest.shape[2] % stride)
-    # imageToTest_padded = np.pad(imageToTest, ((0, 0), (0, pad_height), (0, pad_width), (0, 0)), constant_values=padValue)
-    # im = np.transpose(np.float32(imageToTest_padded[:, :, :, :, np.newaxis]), (4, 3, 0, 1, 2)) / 256 - 0.5
-    # im = np.ascontiguousarray(im)
-
-    # data = torch.from_numpy(im.astype(np.float32))
-    # data = data.squeeze(0).transpose(0, 1)
-    # if torch.cuda.is_available():
-    #     data = data.cuda()
-    
     # Convert Torch tensor to numpy array
     numpy_images = (x*255).numpy()
 

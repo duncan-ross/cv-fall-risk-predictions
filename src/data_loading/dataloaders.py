@@ -39,7 +39,7 @@ transforms: Any = None, preload_videos: bool = False, labels: List = ['y_fall_ri
     return ds_dict['train'], ds_dict['val'], ds_dict['test']
 
 
-def get_mc_data_loaders(video_transformer: Any, batch_size: int = 32, val_batch_size: int = 16, test_batch_size: int = 16, 
+def  get_mc_data_loaders(video_transformer: Any, batch_size: int = 32, val_batch_size: int = 16, test_batch_size: int = 16, 
 transforms: Any = None, preload_videos: bool = False, labels: List = ['pelvis_tilt', 'ankle_angle_l','ankle_angle_r','hip_adduction_r','hip_adduction_l'], num_workers: int = 0) -> Tuple[DataLoader, DataLoader, DataLoader]:
     ds_dict = {}
 
@@ -48,14 +48,22 @@ transforms: Any = None, preload_videos: bool = False, labels: List = ['pelvis_ti
                 transforms.transforms[0]
             ])
         dataset = MotionCaptureDataset(
-            video_folder='data/motion_capture', 
+            video_folder=f'data/motion_capture/{ds}', 
             labels=labels,
             video_transformer=video_transformer,
-            transform=torchvision.transforms.Compose([]),
+            transform=transforms,
             preload_videos=preload_videos
         )
         ds_dict[ds] = DataLoader(dataset, 
         batch_size=batch_size if ds == 'train' else val_batch_size if ds == 'val' else test_batch_size, 
-        shuffle=True, num_workers=num_workers)
+        shuffle=True, num_workers=num_workers, collate_fn=collate_fn)
 
     return ds_dict['train'], ds_dict['val'], None
+
+def collate_fn(batch):
+    # handle videos of different lengths
+    # batch is a list of tuples (subj_id, video, label)
+    subj_id, video, label = zip(*batch)
+    video = torch.cat(video, dim=1)
+    label = torch.cat(label, dim=0)
+    return subj_id, video, label

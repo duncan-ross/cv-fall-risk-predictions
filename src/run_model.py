@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # Save the device
     device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
     print(device)
-    video_transformer = transforms.VideoFilePathToTensor(max_len=22*5, fps=5, padding_mode='zero')
+    video_transformer = transforms.VideoFilePathToTensor(max_len=22*1, fps=1, padding_mode='zero')
     H, W = 256, 256
     transforms = torchvision.transforms.Compose([
                 transforms.VideoResize([H, W]),
@@ -46,12 +46,12 @@ if __name__ == '__main__':
         train_dl, val_dl, test_dl = dataloaders.get_vid_data_loaders(
             video_transformer=video_transformer,
             batch_size=4,
-            val_batch_size=1,
+            val_batch_size=4,
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
             labels=['y_fall_risk'],
-            num_workers=2
+            num_workers=3
         )
         # TensorBoard training log
         writer = SummaryWriter(log_dir='expt/')

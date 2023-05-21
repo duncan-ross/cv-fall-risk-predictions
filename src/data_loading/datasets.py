@@ -7,6 +7,7 @@ import pandas as pd
 import os
 from typing import Any, List
 import data_loading.transforms as transforms
+# import transforms as transforms
 import concurrent.futures
 import PIL
 import torchvision
@@ -88,7 +89,7 @@ class MotionCaptureDataset(Dataset):
         file_names = []
         for file_name in os.listdir(video_folder):
             file_name_without_ext, _ = os.path.splitext(file_name)
-            if file_name_without_ext not in file_names:
+            if (file_name_without_ext not in file_names) and (file_name_without_ext.startswith('s')):
                 file_names.append(file_name_without_ext)
         
         self.ids = file_names
@@ -113,24 +114,26 @@ class MotionCaptureDataset(Dataset):
         df = pd.read_csv(os.path.join(self.video_folder, self.ids[index] + '.csv'))
         tabular = torch.tensor(df[self.labels].values)
         n, m = tabular.shape
-        reduced_rows = n // 2
-        tabular = tabular[:reduced_rows*2, :].view(reduced_rows, 2, m).mean(dim=1)
+        # reduce the number of rows to be equivalent with the video
+        denom = 100 // self.video_transformer.fps
+        reduced_rows = n // denom
+        tabular = tabular[:reduced_rows*denom, :].view(reduced_rows, denom, m).mean(dim=1)
 
         if self.preload_videos:
             video = self.videos[index]
         else:
             # TODO can we get away with not redefining this every time??
-            self.video_transformer.max_len = df.shape[0]
+            self.video_transformer.max_len = tabular.shape[0]
             video =  self.video_transformer(os.path.join(self.video_folder, self.ids[index] + '.mp4'))
         
         if self.transform:
             video = self.transform(video)
 
         try:
-            assert df.shape[0] == video.shape[1]
+            assert tabular.shape[0] == video.shape[1]
         except AssertionError:
             print("Assertion Error: Number of rows mismatch!")
-            print("Number of rows in DataFrame:", df.shape[0])
+            print("Number of rows in DataFrame:", tabular.shape[0])
             print("Number of elements in 'video':", video.shape[1])
             sys.exit(0)
 
