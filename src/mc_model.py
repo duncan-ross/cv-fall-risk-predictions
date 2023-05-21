@@ -25,12 +25,6 @@ class ResnetModel(torch.nn.Module):
         self.backbone = torch.nn.Sequential(*modules)
         self.num_outputs = num_outputs
 
-        # self.transformer_encoder = nn.TransformerEncoder(
-        #     nn.TransformerEncoderLayer(d_model=2048, nhead=num_heads),
-        #     num_layers=num_layers,
-        #     norm=nn.LayerNorm(2048)
-        # )
-
         # Linear layers
         self.linear1 = nn.Linear(512, hidden_size)
         self.linear2 = nn.Linear(hidden_size, self.num_outputs)
@@ -64,7 +58,7 @@ class ResnetModel(torch.nn.Module):
         if targets is not None:
             # MSE
             loss = torch.nn.functional.mse_loss(output, targets)
-
+        print(output, loss)
         return output, loss
 
 
@@ -74,7 +68,7 @@ if __name__ == '__main__':
     # Save the device
     device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
     print(device)
-    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=5, padding_mode='last')
+    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=10, padding_mode='last')
     H, W = 256, 256
     transforms = torchvision.transforms.Compose([
                 transforms.VideoResize([H, W]),
@@ -95,7 +89,7 @@ if __name__ == '__main__':
     # TensorBoard training log
     writer = SummaryWriter(log_dir='expt/')
 
-    train_config = trainer.TrainerConfig(max_epochs=5,
+    train_config = trainer.TrainerConfig(max_epochs=15,
             learning_rate=2e-5, 
             num_workers=4, writer=writer, ckpt_path='expt/params_mc_testing.pt')
 
@@ -119,6 +113,6 @@ if __name__ == '__main__':
         if val_loss < best_val_loss:
             best_val_loss = val_loss
     # write csv of losses
-    with open("mc_loss.txt", 'w') as f:
+    with open("mc_loss.csv", 'w') as f:
         for train_loss, val_loss in zip(train_losses, val_losses):
             f.write(f"{train_loss},{val_loss}\n")
