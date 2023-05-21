@@ -16,16 +16,20 @@ transforms: Any = None, preload_videos: bool = False, labels: List = ['y_fall_ri
     ds_dict = {}
     for ds in ['train', 'val', 'test']:
         # just do the resize for the val/test set
-        transforms = transforms if ds == 'train' else torchvision.transforms.Compose([
+        if len(transforms.transforms) > 0:
+            transforms = transforms if ds == 'train' else torchvision.transforms.Compose([
                 transforms.transforms[0]
             ])
+        else:
+            transforms = transforms
+
         dataset = VideoLabelDataset(
             tabular_csv=f'data/processed/{ds}-survey-data.csv', 
             video_folder=f'data/processed/{ds}-videos', 
             labels=labels, 
             video_transformer=video_transformer,
             transform=transforms,
-            preload_videos=preload_videos
+            preload_videos=preload_videos,
         )
         ds_dict[ds] = DataLoader(dataset, 
         batch_size=batch_size if ds == 'train' else val_batch_size if ds == 'val' else test_batch_size, 

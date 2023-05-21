@@ -61,11 +61,11 @@ if __name__ == '__main__':
                 num_workers=4, writer=writer, ckpt_path='expt/params.pt')
 
         if args.model_name == "Base":
-            model = model.BaseVideoModel(num_outputs=3, L=video_transformer.max_len, H=H, W=W)
+            model = model.BaseVideoModel(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "LSTM":
-            model = model.ResnetLSTM(num_outputs=3, L=video_transformer.max_len, H=H, W=W)
+            model = model.ResnetLSTM(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "Transformer":
-            model = model.ResnetTransformer(num_outputs=3, L=video_transformer.max_len, H=H, W=W)
+            model = model.BaseTransformer(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
         else:
             raise ValueError(f"Model name {args.model_name} not recognized")
 
@@ -103,11 +103,11 @@ if __name__ == '__main__':
             num_workers=0
         )
         if args.model_name == "Base":
-            model = model.BaseVideoModel(num_outputs=3, L=video_transformer.max_len, H=H, W=W)
+            model = model.BaseVideoModel(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "LSTM":
-            model = model.ResnetLSTM(num_outputs=3, L=video_transformer.max_len, H=H, W=W)
+            model = model.ResnetLSTM(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "Transformer":
-            model = model.ResnetTransformer(num_outputs=3, L=video_transformer.max_len, H=H, W=W)
+            model = model.ResnetTransformer(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
         else:
             raise ValueError(f"Model name {args.model_name} not recognized")
 

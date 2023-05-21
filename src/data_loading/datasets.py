@@ -7,7 +7,6 @@ import pandas as pd
 import os
 from typing import Any, List
 import data_loading.transforms as transforms
-#import transforms as transforms
 import concurrent.futures
 import PIL
 import torchvision
