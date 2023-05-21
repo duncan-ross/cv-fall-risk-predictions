@@ -50,7 +50,7 @@ class ResnetModel(torch.nn.Module):
         # Now we have a tensor of shape (N, -1)
         x = x.view(N, -1)
         x = self.linear1(x)
-        x = torch.nn.functional.dropout(x, p=0.5, training=self.training)
+        # x = torch.nn.functional.dropout(x, p=0.5, training=self.training)
         x = torch.relu(x)
         output = self.linear2(x)
 
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     H, W = 256, 256
     transforms = torchvision.transforms.Compose([
                 transforms.VideoResize([H, W]),
-                transforms.VideoRandomHorizontalFlip(),
+                # transforms.VideoRandomHorizontalFlip(),
             ])
                                 
     # get the dataloaders. can make test and val sizes 0 if you don't want them
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     writer = SummaryWriter(log_dir='expt/')
 
     train_config = trainer.TrainerConfig(max_epochs=15,
-            learning_rate=2e-5, 
+            learning_rate=2e-2, 
             num_workers=4, writer=writer, ckpt_path='expt/params_mc_testing.pt')
 
     # for subj_id, videos, labels in train_dl:
