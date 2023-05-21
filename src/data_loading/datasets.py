@@ -118,6 +118,7 @@ class MotionCaptureDataset(Dataset):
         denom = 100 // self.video_transformer.fps
         reduced_rows = n // denom
         tabular = tabular[:reduced_rows*denom, :].view(reduced_rows, denom, m).mean(dim=1)
+        tabular = torch.abs(tabular)
 
         if self.preload_videos:
             video = self.videos[index]
