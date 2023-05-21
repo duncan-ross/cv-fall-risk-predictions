@@ -23,7 +23,7 @@ if __name__ == "__main__":
             col for col in survey_data
             if col.find("TEXT") < 0 and
             col not in [
-                "subjectid", "Country", "State", "feedback_open", "continue", "difficult_open"
+                "subjectid", "Country", "State", "feedback_open", "continue", "difficult_open", "falling_1", "falling_2", "falling_3"
             ]
         ]
         survey_data = survey_data[kept_cols]
