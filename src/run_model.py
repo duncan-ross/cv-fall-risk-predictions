@@ -18,11 +18,11 @@ torch.manual_seed(0)
 argp = argparse.ArgumentParser()
 argp.add_argument('function', help="Choose train or evaluate") #TODO: add behavior for pretrain and eval
 argp.add_argument('--writing_params_path', type=str, help='Path to the writing params file', default="base.params")
-argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="base.params")
+argp.add_argument('--reading_params_path', type=str, help='Path to the reading params file', default="LSTM5_2.params")
 argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="new.csv", required=False)
 argp.add_argument('--loss_path', type=str, help='Path to the output losses', default="base.txt", required=False)
 argp.add_argument('--max_epochs', type=int, help='Number of epochs to train for', default=15, required=False)
-argp.add_argument('--learning_rate', type=float, help='Learning rate', default=2e-5, required=False)
+argp.add_argument('--learning_rate', type=float, help='Learning rate', default=2e-4, required=False)
 argp.add_argument('--seed', type=int, help='Number of epochs to train for', default=0, required=False)
 argp.add_argument('--model_name', type=str, help='Name of model to use', default="LSTM", required=False)
 args = argp.parse_args()
@@ -31,13 +31,16 @@ if __name__ == '__main__':
     # Save the device
     device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
     print(device)
-    video_transformer = transforms.VideoFilePathToTensor(max_len=22*1, fps=1, padding_mode='zero')
+    video_transformer = transforms.VideoFilePathToTensor(max_len=22*3, fps=3, padding_mode='zero')
     H, W = 256, 256
     transforms = torchvision.transforms.Compose([
                 transforms.VideoResize([H, W]),
-                transforms.VideoRandomHorizontalFlip(),
+                # transforms.VideoRandomHorizontalFlip(),
                 transforms.NormalizeVideoFrames()
             ])
+
+    labels = ['y_fall_risk_binary', 'amm_4', 'amm_5', 'PES_2', 'PES_5']
+    # labels = ['y_fall_risk']
                                 
     if args.function == 'pretrain':
         pass
@@ -51,8 +54,8 @@ if __name__ == '__main__':
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
-            labels=['y_fall_risk_binary', 'amm_4', 'amm_5', 'PES_2', 'PES_5'],
-            num_workers=3
+            labels=labels,
+            num_workers=0
         )
         # TensorBoard training log
         writer = SummaryWriter(log_dir='expt/')
@@ -62,13 +65,13 @@ if __name__ == '__main__':
                 num_workers=4, writer=writer, ckpt_path='expt/params.pt')
 
         if args.model_name == "Base":
-            model = model.BaseVideoModel(num_outputs=5, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.BaseVideoModel(num_outputs=len(labels), L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "LSTM":
-            model = model.ResnetLSTM(num_outputs=5, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.ResnetLSTM(num_outputs=len(labels), L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "Transformer":
-            model = model.ResnetTransformer(num_outputs=5, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.ResnetTransformer(num_outputs=len(labels), L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "OpenPose":
-            model = model.BaseOpenPose(num_outputs=5, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.BaseOpenPose(num_outputs=len(labels), L=video_transformer.max_len, H=H, W=W, device=device)
         else:
             raise ValueError(f"Model name {args.model_name} not recognized")
 
@@ -102,15 +105,15 @@ if __name__ == '__main__':
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
-            labels=['y_fall_risk'],
+            labels=labels,
             num_workers=0
         )
         if args.model_name == "Base":
-            model = model.BaseVideoModel(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.BaseVideoModel(num_outputs=len(labels), L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "LSTM":
-            model = model.ResnetLSTM(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.ResnetLSTM(num_outputs=len(labels), L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "Transformer":
-            model = model.ResnetTransformer(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.ResnetTransformer(num_outputs=len(labels), L=video_transformer.max_len, H=H, W=W, device=device)
         else:
             raise ValueError(f"Model name {args.model_name} not recognized")
 
@@ -122,8 +125,8 @@ if __name__ == '__main__':
 
         pbar = tqdm(enumerate(test_dl), total=len(test_dl)) 
         # pred_cols = [f'pred_{c}' for c in dataset.targets_sentence.columns] + [f'pred_word_{c}' for c in dataset.targets_words.columns] + [f'pred_{c}' for c in dataset.targets_phones.columns]
-        pred_cols = ['pred_fall_risk_0', 'pred_fall_risk_1', 'pred_fall_risk_2']
-        actual_cols = ['y_fall_risk']
+        pred_cols = ['pred_y_fall_risk_binary', 'pred_amm_4', 'pred_amm_5', 'pred_PES_2', 'pred_PES_5']
+        actual_cols = labels
         for it, (subj_id, x, y) in pbar:
             print(it)
             # place data on the correct device

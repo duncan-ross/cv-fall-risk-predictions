@@ -101,6 +101,8 @@ class VideoFilePathToTensor(object):
 
         frames /= 255
         cap.release()
+        device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
+        frmaes = frames.to(device)
         return frames
 
 
@@ -392,12 +394,13 @@ class NormalizeVideoFrames(object):
         """
 
         C, L, H, W = video.size()
-        normalized_video = torch.FloatTensor(C, L, H, W)
+        normalized_video = torch.zeros(C, L, H, W, dtype=torch.float32)
 
-        for l in range(L):
-            frame = video[:, l, :, :]
-            frame = torchvision.transforms.functional.normalize(frame, self.mean, self.std)
-            normalized_video[:, l, :, :] = frame
+        frames = video.permute(1, 0, 2, 3)  # Shape: (L, C, H, W)
+
+        normalized_frames = torchvision.transforms.functional.normalize(frames, self.mean, self.std)
+
+        normalized_video = normalized_frames.permute(1, 0, 2, 3)
 
         return normalized_video
 

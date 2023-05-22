@@ -79,9 +79,9 @@ class ResnetLSTM(torch.nn.Module):
         self.lstm = torch.nn.LSTM(512, 512, batch_first=True, bidirectional=True)
 
         # decoder for lstm fc layers
-        self.layer1 = nn.Linear(512*2*L, 2048)
-        self.layer_norm = nn.LayerNorm(2048)
-        self.layer2 = nn.Linear(2048, 512)
+        self.layer1 = nn.Linear(512*2, 512)
+        self.layer_norm = nn.LayerNorm(512)
+        # self.layer2 = nn.Linear(2048, 512)
         self.layer3 = nn.Linear(512, num_outputs)
         
     
@@ -101,13 +101,13 @@ class ResnetLSTM(torch.nn.Module):
         x = self.backbone(x)
         x = x.reshape(N, L, -1)
         x, hidden = self.lstm(x)
-        # x = hidden[0].transpose(0, 1).reshape(N, -1)
-        x = x.reshape(N, -1)
+        x = hidden[0].transpose(0, 1).reshape(N, -1)
+        # x = x.reshape(N, -1)
         x = self.layer1(x)
-        x = self.layer_norm(x)
+        # x = self.layer_norm(x)
         x = torch.nn.functional.relu(x)
-        x = self.layer2(x)
-        x = torch.nn.functional.relu(x)
+        # x = self.layer2(x)
+        # x = torch.nn.functional.relu(x)
         output = self.layer3(x)
 
         loss = None
@@ -125,10 +125,10 @@ class ResnetLSTM(torch.nn.Module):
                 # class weights median freq[0] when class 0, median freq[1] when class 1
                 class_weights = median_freq_weights[targets[:, 0].long()]
                 # weighting these two losses equally
-                loss = torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
+                loss = 5*torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
                 loss += torch.nn.MSELoss()(output[:, 1:], targets[:, 1:])
         # softmax but do not do gradient
-        if targets.shape[1] == 1:
+        if self.num_outputs == 3:
             with torch.no_grad():
                 final_output = torch.nn.functional.softmax(output, dim=1)
         else:
