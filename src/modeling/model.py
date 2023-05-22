@@ -118,7 +118,7 @@ class ResnetLSTM(torch.nn.Module):
                 # class weights median freq[0] when class 0, median freq[1] when class 1
                 class_weights = median_freq_weights[targets[:, 0].long()]
                 # weighting these two losses equally
-                loss = torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
+                loss = torch.nn.BCEWithLogitsLoss()(output[:, 0], targets[:, 0])
                 loss += torch.nn.MSELoss()(output[:, 1:], targets[:, 1:])
         # softmax but do not do gradient
         if targets.shape[1] == 1:
