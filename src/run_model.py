@@ -22,9 +22,9 @@ argp.add_argument('--reading_params_path', type=str, help='Path to the reading p
 argp.add_argument('--outputs_path', type=str, help='Path to the output predictions', default="new.csv", required=False)
 argp.add_argument('--loss_path', type=str, help='Path to the output losses', default="base.txt", required=False)
 argp.add_argument('--max_epochs', type=int, help='Number of epochs to train for', default=5, required=False)
-argp.add_argument('--learning_rate', type=float, help='Learning rate', default=2e-5, required=False)
+argp.add_argument('--learning_rate', type=float, help='Learning rate', default=2e-3, required=False)
 argp.add_argument('--seed', type=int, help='Number of epochs to train for', default=0, required=False)
-argp.add_argument('--model_name', type=str, help='Name of model to use', default="Transformer", required=False)
+argp.add_argument('--model_name', type=str, help='Name of model to use', default="LSTM", required=False)
 args = argp.parse_args()
 
 if __name__ == '__main__':
@@ -50,7 +50,7 @@ if __name__ == '__main__':
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
-            labels=['y_fall_risk_binary'],
+            labels=['y_fall_risk_binary', 'amm_4', 'amm_5', 'PES_2', 'PES_5'],
             num_workers=3
         )
         # TensorBoard training log
