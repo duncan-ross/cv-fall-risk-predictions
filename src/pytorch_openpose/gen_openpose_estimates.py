@@ -24,6 +24,7 @@ import pandas as pd
 # https://stackoverflow.com/questions/61036822/opencv-videowriter-produces-cant-find-starting-number-error
 import ffmpeg
 
+
 class FFProbeResult(NamedTuple):
     return_code: int
     json: str
@@ -31,23 +32,31 @@ class FFProbeResult(NamedTuple):
 
 
 def ffprobe(file_path) -> FFProbeResult:
-    command_array = ["ffprobe",
-                     "-v", "quiet",
-                     "-print_format", "json",
-                     "-show_format",
-                     "-show_streams",
-                     file_path]
-    result = subprocess.run(command_array, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-    return FFProbeResult(return_code=result.returncode,
-                         json=result.stdout,
-                         error=result.stderr)
-
+    command_array = [
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_format",
+        "-show_streams",
+        file_path,
+    ]
+    result = subprocess.run(
+        command_array,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    return FFProbeResult(
+        return_code=result.returncode, json=result.stdout, error=result.stderr
+    )
 
 
 def process_video(video_file):
     # load models
-    body_estimation = Body('model/body_pose_model.pth')
-    hand_estimation = Hand('model/hand_pose_model.pth')
+    body_estimation = Body("model/body_pose_model.pth")
+    hand_estimation = Hand("model/hand_pose_model.pth")
 
     cap = cv2.VideoCapture(video_file)
 
@@ -60,10 +69,9 @@ def process_video(video_file):
     input_pix_fmt = videoinfo["pix_fmt"]
     input_vcodec = videoinfo["codec_name"]
 
-
     # collect df of all frames
     df_list = []
-    while(cap.isOpened()):
+    while cap.isOpened():
         ret, frame = cap.read()
         if frame is None:
             break
@@ -71,33 +79,38 @@ def process_video(video_file):
         candidate, _ = body_estimation(frame)
         if len(candidate) == 0:
             continue
-        cand_df = pd.DataFrame(candidate, columns=['x', 'y', 'score', 'id'])
-        cand_df['frame'] = cap.get(cv2.CAP_PROP_POS_FRAMES)
+        cand_df = pd.DataFrame(candidate, columns=["x", "y", "score", "id"])
+        cand_df["frame"] = cap.get(cv2.CAP_PROP_POS_FRAMES)
         df_list.append(cand_df)
         print(cap.get(cv2.CAP_PROP_POS_FRAMES))
 
     # combine all frames
     df = pd.concat(df_list)
-    df['subj_id'] = video_file.split('/')[-1].replace('.mp4', '')
+    df["subj_id"] = video_file.split("/")[-1].replace(".mp4", "")
 
     cap.release()
     cv2.destroyAllWindows()
     return df
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # open specified video
     parser = argparse.ArgumentParser(
-            description="Process a video annotating poses detected.")
-    parser.add_argument('--directory', type=str, help='Video directory to process', default='data/processed/train-videos/')
+        description="Process a video annotating poses detected."
+    )
+    parser.add_argument(
+        "--directory",
+        type=str,
+        help="Video directory to process",
+        default="data/processed/train-videos/",
+    )
     args = parser.parse_args()
 
     # get all video files in directory
-    video_files = glob(os.path.join(args.directory, '*.mp4'))
+    video_files = glob(os.path.join(args.directory, "*.mp4"))
 
     # process each video file
     with mp.Pool(processes=mp.cpu_count()) as pool:
         result_list = pool.map(process_video, video_files)
     df = pd.concat(result_list)
-    df.to_csv(os.path.join(args.directory, 'all.csv'), index=False)
-    
+    df.to_csv(os.path.join(args.directory, "all.csv"), index=False)

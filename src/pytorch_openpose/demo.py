@@ -8,10 +8,10 @@ from src import util
 from src.body import Body
 from src.hand import Hand
 
-body_estimation = Body('model/body_pose_model.pth')
-hand_estimation = Hand('model/hand_pose_model.pth')
+body_estimation = Body("model/body_pose_model.pth")
+hand_estimation = Hand("model/hand_pose_model.pth")
 
-test_image = 'images/demo.jpg'
+test_image = "images/demo.jpg"
 oriImg = cv2.imread(test_image)  # B,G,R order
 candidate, subset = body_estimation(oriImg)
 canvas = copy.deepcopy(oriImg)
@@ -25,11 +25,11 @@ for x, y, w, is_left in hands_list:
     # cv2.putText(canvas, 'left' if is_left else 'right', (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
     # if is_left:
-        # plt.imshow(oriImg[y:y+w, x:x+w, :][:, :, [2, 1, 0]])
-        # plt.show()
-    peaks = hand_estimation(oriImg[y:y+w, x:x+w, :])
-    peaks[:, 0] = np.where(peaks[:, 0]==0, peaks[:, 0], peaks[:, 0]+x)
-    peaks[:, 1] = np.where(peaks[:, 1]==0, peaks[:, 1], peaks[:, 1]+y)
+    # plt.imshow(oriImg[y:y+w, x:x+w, :][:, :, [2, 1, 0]])
+    # plt.show()
+    peaks = hand_estimation(oriImg[y : y + w, x : x + w, :])
+    peaks[:, 0] = np.where(peaks[:, 0] == 0, peaks[:, 0], peaks[:, 0] + x)
+    peaks[:, 1] = np.where(peaks[:, 1] == 0, peaks[:, 1], peaks[:, 1] + y)
     # else:
     #     peaks = hand_estimation(cv2.flip(oriImg[y:y+w, x:x+w, :], 1))
     #     peaks[:, 0] = np.where(peaks[:, 0]==0, peaks[:, 0], w-peaks[:, 0]-1+x)
@@ -40,5 +40,5 @@ for x, y, w, is_left in hands_list:
 canvas = util.draw_handpose(canvas, all_hand_peaks)
 
 plt.imshow(canvas[:, :, [2, 1, 0]])
-plt.axis('off')
+plt.axis("off")
 plt.show()

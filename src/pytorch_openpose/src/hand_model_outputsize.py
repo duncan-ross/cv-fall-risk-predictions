@@ -13,5 +13,5 @@ for i in tqdm(range(10, 1000)):
         data = data.cuda()
     size[i] = model(data).size(2)
 
-with open('hand_model_output_size.json') as f:
+with open("hand_model_output_size.json") as f:
     json.dump(size, f)

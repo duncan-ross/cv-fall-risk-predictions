@@ -1,20 +1,29 @@
 import sys
 import torch
-from torch.utils.data import Dataset 
+from torch.utils.data import Dataset
 import cv2
-import numpy as np 
+import numpy as np
 import pandas as pd
 import os
 from typing import Any, List
 import data_loading.transforms as transforms
+
 # import transforms as transforms
 import concurrent.futures
 import PIL
 import torchvision
 
+
 class VideoLabelDataset(Dataset):
-    def __init__(self, tabular_csv: str, video_folder: str, labels: List[str], transform:Any =None, 
-    video_transformer=transforms.VideoFilePathToTensor(), preload_videos: bool=True):
+    def __init__(
+        self,
+        tabular_csv: str,
+        video_folder: str,
+        labels: List[str],
+        transform: Any = None,
+        video_transformer=transforms.VideoFilePathToTensor(),
+        preload_videos: bool = True,
+    ):
         """
         Args:
             tabular_csv (string): Path to the csv file with annotations.
@@ -33,7 +42,7 @@ class VideoLabelDataset(Dataset):
 
         df = pd.read_csv(tabular_csv)
         self.labels = df[labels].values
-        self.ids = df['subjectid'].values
+        self.ids = df["subjectid"].values
         # load videos into memory if desired
         self.videos = None
         if preload_videos:
@@ -52,30 +61,47 @@ class VideoLabelDataset(Dataset):
         if self.preload_videos:
             video = self.videos[index]
         else:
-            video =  self.video_transformer(os.path.join(self.video_folder, self.ids[index] + '.mp4'))
-        
+            video = self.video_transformer(
+                os.path.join(self.video_folder, self.ids[index] + ".mp4")
+            )
+
         label = self.labels[index]
         if self.transform:
             video = self.transform(video)
         return self.ids[index], video, torch.tensor(label)
-    
+
     def load_videos(self, video_transformer: transforms.VideoFilePathToTensor):
         """
         Loads all videos into memory.
         """
+
         def process_video(id, video_folder):
             print(id)
-            return video_transformer(os.path.join(video_folder, id + '.mp4'))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() // 2) as executor:
+            return video_transformer(os.path.join(video_folder, id + ".mp4"))
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=os.cpu_count() // 2
+        ) as executor:
             video_folder = self.video_folder
-            self.videos = list(executor.map(
-                lambda id: video_transformer(os.path.join(video_folder, id + '.mp4')),
-                self.ids
-            ))
+            self.videos = list(
+                executor.map(
+                    lambda id: video_transformer(
+                        os.path.join(video_folder, id + ".mp4")
+                    ),
+                    self.ids,
+                )
+            )
+
 
 class MotionCaptureDataset(Dataset):
-    def __init__(self, video_folder: str, labels: List[str], transform:Any =None, 
-    video_transformer=transforms.VideoFilePathToTensor(fps=50, padding_mode='last'), preload_videos: bool=True):
+    def __init__(
+        self,
+        video_folder: str,
+        labels: List[str],
+        transform: Any = None,
+        video_transformer=transforms.VideoFilePathToTensor(fps=50, padding_mode="last"),
+        preload_videos: bool = True,
+    ):
         """
         Args:
             video_folder (string): Directory with all the videos.
@@ -89,14 +115,16 @@ class MotionCaptureDataset(Dataset):
         file_names = []
         for file_name in os.listdir(video_folder):
             file_name_without_ext, _ = os.path.splitext(file_name)
-            if (file_name_without_ext not in file_names) and (file_name_without_ext.startswith('s')):
+            if (file_name_without_ext not in file_names) and (
+                file_name_without_ext.startswith("s")
+            ):
                 file_names.append(file_name_without_ext)
-        
+
         self.ids = file_names
         self.video_folder = video_folder
         self.transform = transform
         self.video_transformer = video_transformer
-        self.preload_videos = preload_videos # Not possible atm.
+        self.preload_videos = preload_videos  # Not possible atm.
         self.labels = labels
         self.videos = None
 
@@ -111,13 +139,15 @@ class MotionCaptureDataset(Dataset):
             tuple: (subject id, video, label) where label is an array of labels.
         """
 
-        df = pd.read_csv(os.path.join(self.video_folder, self.ids[index] + '.csv'))
+        df = pd.read_csv(os.path.join(self.video_folder, self.ids[index] + ".csv"))
         tabular = torch.tensor(df[self.labels].values)
         n, m = tabular.shape
         # reduce the number of rows to be equivalent with the video
         denom = 100 // self.video_transformer.fps
         reduced_rows = n // denom
-        tabular = tabular[:reduced_rows*denom, :].view(reduced_rows, denom, m).mean(dim=1)
+        tabular = (
+            tabular[: reduced_rows * denom, :].view(reduced_rows, denom, m).mean(dim=1)
+        )
         tabular = torch.abs(tabular)
 
         if self.preload_videos:
@@ -125,8 +155,10 @@ class MotionCaptureDataset(Dataset):
         else:
             # TODO can we get away with not redefining this every time??
             self.video_transformer.max_len = tabular.shape[0]
-            video =  self.video_transformer(os.path.join(self.video_folder, self.ids[index] + '.mp4'))
-        
+            video = self.video_transformer(
+                os.path.join(self.video_folder, self.ids[index] + ".mp4")
+            )
+
         if self.transform:
             video = self.transform(video)
 
@@ -139,32 +171,42 @@ class MotionCaptureDataset(Dataset):
             sys.exit(0)
 
         return self.ids[index], video, tabular
-    
+
     def load_videos(self, video_transformer: transforms.VideoFilePathToTensor):
         """
         Loads all videos into memory.
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() // 2) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=os.cpu_count() // 2
+        ) as executor:
             video_folder = self.video_folder
-            self.videos = list(executor.map(
-                lambda id: video_transformer(os.path.join(video_folder, id + '.mp4')),
-                self.ids
-            ))
-    
+            self.videos = list(
+                executor.map(
+                    lambda id: video_transformer(
+                        os.path.join(video_folder, id + ".mp4")
+                    ),
+                    self.ids,
+                )
+            )
 
-if __name__ == '__main__SKIP':
+
+if __name__ == "__main__SKIP":
     # test for VideoDataset
-    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=50, padding_mode='last')
+    video_transformer = transforms.VideoFilePathToTensor(
+        max_len=None, fps=50, padding_mode="last"
+    )
     dataset = VideoLabelDataset(
-        tabular_csv='data/processed/val-survey-data.csv', 
-        video_folder='data/processed/val-videos', 
-        labels=['y_fall_risk'], 
+        tabular_csv="data/processed/val-survey-data.csv",
+        video_folder="data/processed/val-videos",
+        labels=["y_fall_risk"],
         video_transformer=video_transformer,
-        transform=torchvision.transforms.Compose([
-            # transforms.VideoRandomCrop([512, 512]),
-            # transforms.VideoResize([256, 256]),
-        ]),
-        preload_videos=False
+        transform=torchvision.transforms.Compose(
+            [
+                # transforms.VideoRandomCrop([512, 512]),
+                # transforms.VideoResize([256, 256]),
+            ]
+        ),
+        preload_videos=False,
     )
     subj_id, video, label = dataset[0]
     print(subj_id, video.size(), label)
@@ -174,22 +216,24 @@ if __name__ == '__main__SKIP':
     frame2.show()
 
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
-    
+
     for subj_id, videos, labels in test_loader:
         print(subj_id, videos.size(), label)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # test for VideoDataset
-    video_transformer = transforms.VideoFilePathToTensor(max_len=None, fps=50, padding_mode='last')
+    video_transformer = transforms.VideoFilePathToTensor(
+        max_len=None, fps=50, padding_mode="last"
+    )
     dataset = MotionCaptureDataset(
-        video_folder='data/motion_capture', 
-        labels=['pelvis_tilt', 'ankle_angle_l'],
+        video_folder="data/motion_capture",
+        labels=["pelvis_tilt", "ankle_angle_l"],
         video_transformer=video_transformer,
         transform=torchvision.transforms.Compose([]),
-        preload_videos=False
+        preload_videos=False,
     )
     subj_id, video, label = dataset[0]
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
     for subj_id, videos, labels in test_loader:
-        #print(subj_id, videos.size(), label)
+        # print(subj_id, videos.size(), label)
         continue

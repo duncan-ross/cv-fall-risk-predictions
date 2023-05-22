@@ -1,6 +1,6 @@
 tofix = {
-    "uQaqBtOs": [99,450],
-    "MSYVAPeM": [0,320],
+    "uQaqBtOs": [99, 450],
+    "MSYVAPeM": [0, 320],
     "9qluCnOn": [70, 360],
     "dG40RNan": [30, 350],
     "gudwNnwN": [0, 370],
@@ -73,4 +73,4 @@ toremove = [
     "KHDHZ4c5",
     "cJ5yeoqX",
     "Qs3QUCTy",
-]   
+]

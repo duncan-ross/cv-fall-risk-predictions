@@ -15,7 +15,7 @@ argp.add_argument("--loss", type=str, default="weighted_ce", required=False)
 if __name__ == "__main__":
     args = argp.parse_args()
     results = pd.read_csv(args.predictions_file)
-    probs = np.array(results.iloc[:, 1:4]) # Middle three columns
+    probs = np.array(results.iloc[:, 1:4])  # Middle three columns
     y_true = np.array(results.iloc[:, -1]).reshape(-1)
     y_pred = np.argmax(probs, axis=1)
     conf_mat = confusion_matrix(y_true=y_true, y_pred=y_pred)
@@ -23,12 +23,16 @@ if __name__ == "__main__":
         weights = np.ones(probs.shape[1], dtype=float)
         acc = accuracy_score(y_true, y_pred)
     elif args.loss == "weighted_ce":
-        device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
-        video_transformer = transforms.VideoFilePathToTensor(max_len=35, fps=5, padding_mode='last')
-        transforms = torchvision.transforms.Compose([
-            transforms.VideoResize([256, 256]),
-            transforms.VideoRandomHorizontalFlip(),
-        ])
+        device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
+        video_transformer = transforms.VideoFilePathToTensor(
+            max_len=35, fps=5, padding_mode="last"
+        )
+        transforms = torchvision.transforms.Compose(
+            [
+                transforms.VideoResize([256, 256]),
+                transforms.VideoRandomHorizontalFlip(),
+            ]
+        )
         train_dl, _, _ = dataloaders.get_vid_data_loaders(
             video_transformer=video_transformer,
             batch_size=4,
@@ -36,8 +40,8 @@ if __name__ == "__main__":
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
-            labels=['y_fall_risk'],
-            num_workers=0
+            labels=["y_fall_risk"],
+            num_workers=0,
         )
         weights = calculate_weights(train_dl, device).numpy()
         num = (np.diag(conf_mat) * weights).sum()
@@ -51,9 +55,8 @@ if __name__ == "__main__":
     ce = cross_entropy(
         input=torch.FloatTensor(probs),
         target=torch.LongTensor(y_true),
-        weight=torch.FloatTensor(weights)
+        weight=torch.FloatTensor(weights),
     )
     print(f"(Weighted) Cross-Entropy Loss on Test Set: {ce}")
     print(f"(Weighted) Accuracy on Test Set: {acc}")
     print(f"Confusion Matrix of Results:\n{conf_mat}")
-

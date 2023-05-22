@@ -8,6 +8,7 @@ argp = argparse.ArgumentParser()
 argp.add_argument("--data_dir", type=str, default="data/")
 argp.add_argument("--seed", type=int, default=231)
 
+
 def get_resp_bucket(scaled_response):
     if scaled_response == 0:
         return 0
@@ -15,6 +16,7 @@ def get_resp_bucket(scaled_response):
         return 1
     else:
         return 2
+
 
 def train_val_test_split(idx, pct_train, pct_test, seed):
     np.random.seed(seed)
@@ -30,6 +32,7 @@ def train_val_test_split(idx, pct_train, pct_test, seed):
     assert len(set(train_idx).intersection(set(val_idx), set(test_idx))) == 0
     return {"train": train_idx, "val": val_idx, "test": test_idx}
 
+
 if __name__ == "__main__":
     args = argp.parse_args()
     data_dir = args.data_dir
@@ -40,15 +43,18 @@ if __name__ == "__main__":
     video_files = os.listdir(os.path.join(data_dir, "raw/videos/"))
     video_ids = set([f.split(".mp4")[0] for f in video_files])
     # Keep as list to preserve order
-    kept_ids = [idx for idx in valid_ids
-                if idx in set(valid_ids).intersection(video_ids)]
+    kept_ids = [
+        idx for idx in valid_ids if idx in set(valid_ids).intersection(video_ids)
+    ]
     print(f"{len(kept_ids)} unique observations in processed data")
 
     # Filter and process survey data accordingly
-    col_names = pd.read_csv(os.path.join(data_dir, "raw/dataSurvey.csv"),
-                            nrows=1).columns
-    survey = pd.read_csv(os.path.join(data_dir, "raw/dataSurvey.csv"),
-                         header=1, names=col_names)
+    col_names = pd.read_csv(
+        os.path.join(data_dir, "raw/dataSurvey.csv"), nrows=1
+    ).columns
+    survey = pd.read_csv(
+        os.path.join(data_dir, "raw/dataSurvey.csv"), header=1, names=col_names
+    )
     # Make response variable
     # Remove copy warning
     pd.set_option("mode.chained_assignment", None)
@@ -57,9 +63,7 @@ if __name__ == "__main__":
     # Reinstate copy warning
     pd.set_option("mode.chained_assignment", "warn")
 
-    id_splits = train_val_test_split(
-        kept_ids, pct_train=0.7, pct_test=0.15, seed=seed
-    )
+    id_splits = train_val_test_split(kept_ids, pct_train=0.7, pct_test=0.15, seed=seed)
 
     for split, split_idx in id_splits.items():
         id_txt = os.path.join(data_dir, f"processed/{split}-video-ids.txt")
@@ -79,8 +83,10 @@ if __name__ == "__main__":
             if path.split(".mp4")[0] in split_idx
         ]
         for file_path in sub_video_files:
-            shutil.copy2(os.path.join(data_dir, "raw/videos/", file_path),
-                         os.path.join(out_dir, file_path))
+            shutil.copy2(
+                os.path.join(data_dir, "raw/videos/", file_path),
+                os.path.join(out_dir, file_path),
+            )
         sub_survey = survey[[id in split_idx for id in survey.subjectid]]
         sub_survey.to_csv(
             os.path.join(data_dir, f"processed/{split}-survey-data.csv"), index=False

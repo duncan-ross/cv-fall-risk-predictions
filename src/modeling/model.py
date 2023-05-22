@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 from pytorch_openpose.src.model import bodypose_model
 from pytorch_openpose.src import util
+from data_loading import transforms
 
 
 class BaseVideoModel(torch.nn.Module):
@@ -216,124 +217,123 @@ class ResnetTransformer(torch.nn.Module):
 
 
 class BaseOpenPose(torch.nn.Module):
-        def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6, device='cpu'):
-            super(BaseOpenPose, self).__init__()
-            self.device = device
-            self.model = bodypose_model()
-            model_dict = util.transfer(self.model, torch.load('model/body_pose_model.pth'))
-            self.model.load_state_dict(model_dict)
-            self.model = self.model.to(device)
-            modules = list(self.model.children())[:-1]
-            self.backbone = torch.nn.Sequential(*modules)
+    def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6, device='cpu'):
+        super(BaseOpenPose, self).__init__()
+        self.device = device
+        self.model = bodypose_model()
+        model_dict = util.transfer(self.model, torch.load('model/body_pose_model.pth'))
+        self.model.load_state_dict(model_dict)
+        self.model = self.model.to(device)
+        # modules = list(self.model.children())[:-1]
+        # self.backbone = torch.nn.Sequential(*modules)
 
-            # reduce the number of channels
-            self.rnn = nn.GRU(input_size=38*23*23, hidden_size=64, num_layers=2, batch_first=True, bidirectional=True)
+        # reduce the number of channels
+        self.rnn = nn.GRU(input_size=38*23*23, hidden_size=64, num_layers=2, batch_first=True, bidirectional=True)
 
-            # Linear layers
-            self.fc1 = nn.Linear(4 * 64, num_outputs)
+        # Linear layers
+        self.fc1 = nn.Linear(4 * 64, num_outputs)
 
-            self.num_outputs = num_outputs
+        self.num_outputs = num_outputs
 
-        def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
-            """
-            Args:
-                x (torch.Tensor): Video tensor of shape (N X C x L x H x W)
-            Returns:
-                torch.Tensor: Output vector of length N, Loss
-            """
-            N, C, L, H, W = x.shape
-            x = x.transpose(1, 2)
-            out = x.reshape(-1, x.shape[2], x.shape[3], x.shape[4])
-            data = process_image(out).to(self.device)
+    def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
+        """
+        Args:
+            x (torch.Tensor): Video tensor of shape (N X C x L x H x W)
+        Returns:
+            torch.Tensor: Output vector of length N, Loss
+        """
+        N, C, L, H, W = x.shape
+        x = x.transpose(1, 2)
+        out = x.reshape(-1, x.shape[2], x.shape[3], x.shape[4])
+        data = transforms.process_image(out).to(self.device)
 
-            out, _ = self.model(data)
-            # out is (N*L, 38, 17, 17)
-            # COMPLETE CODE TO GET OUTPUT which should be (N) dimensional
-            # linear, relu, linear
-            out = out.reshape(N, L, -1)
-            output, hid = self.rnn(out)
+        out, _ = self.model(data)
+        # out is (N*L, 38, 17, 17)
+        # COMPLETE CODE TO GET OUTPUT which should be (N) dimensional
+        # linear, relu, linear
+        out = out.reshape(N, L, -1)
+        output, hid = self.rnn(out)
 
-            hid = hid.reshape(N, -1)
-            output = self.fc1(hid)
-            loss = None
+        hid = hid.reshape(N, -1)
+        output = self.fc1(hid)
+        loss = None
 
-            # compute loss
-            if targets is not None:
-                if targets.shape[1] == 1:
-                    # cross entropy loss- only can do with one output column. targets as int of shape (N,)
-                    targets = targets.reshape(-1).long()
-                    if median_freq_weights is not None:
-                        # binary cross entropy with class weights torch logits
-                        loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
-                    else:
-                        loss = torch.nn.CrossEntropyLoss()(output, targets)
-                else:
-                    # first target binary, rest is regression
-                    # class weights median freq[0] when class 0, median freq[1] when class 1
-                    class_weights = median_freq_weights[targets[:, 0].long()]
-                    # weighting these two losses equally
-                    loss = torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
-                    loss += torch.nn.MSELoss()(output[:, 1:], targets[:, 1:])
-                    
-            # output
+        # compute loss
+        if targets is not None:
             if targets.shape[1] == 1:
-                with torch.no_grad():
-                    final_output = torch.nn.functional.softmax(output, dim=1)
+                # cross entropy loss- only can do with one output column. targets as int of shape (N,)
+                targets = targets.reshape(-1).long()
+                if median_freq_weights is not None:
+                    # binary cross entropy with class weights torch logits
+                    loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
+                else:
+                    loss = torch.nn.CrossEntropyLoss()(output, targets)
             else:
-                # sigmoid but do not do gradient
-                with torch.no_grad():
-                    final_output = torch.clone(output)
-                    final_output[:, 0] = torch.sigmoid(final_output[:, 0])
-                print(final_output)
-                return final_output, loss
+                # first target binary, rest is regression
+                # class weights median freq[0] when class 0, median freq[1] when class 1
+                class_weights = median_freq_weights[targets[:, 0].long()]
+                # weighting these two losses equally
+                loss = torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
+                loss += torch.nn.MSELoss()(output[:, 1:], targets[:, 1:])
+                
+        # output
+        if targets.shape[1] == 1:
+            with torch.no_grad():
+                final_output = torch.nn.functional.softmax(output, dim=1)
+        else:
+            # sigmoid but do not do gradient
+            with torch.no_grad():
+                final_output = torch.clone(output)
+                final_output[:, 0] = torch.sigmoid(final_output[:, 0])
+            print(final_output)
+            return final_output, loss
 
-# Helper function to proc image for openpose
-def process_image(x):
-    # Convert Torch tensor to numpy array
-    numpy_images = (x*255).numpy()
 
-    # Transpose the image array if necessary
-    if len(numpy_images.shape) == 4:
-        numpy_images = np.transpose(numpy_images, (0, 2, 3, 1))
-    else:
-        numpy_images = np.transpose(numpy_images, (1, 2, 0))
+class OpenPoseMC(torch.nn.Module):
+    def __init__(self, num_outputs, H, W, hidden_size=512, device='cpu'):
+        super(OpenPoseMC, self).__init__()
+        self.device = device
+        self.model = bodypose_model()
+        model_dict = util.transfer(self.model, torch.load('model/body_pose_model.pth'))
+        self.model.load_state_dict(model_dict)
+        self.model = self.model.to(device)
+        # modules = list(self.model.children())[:-1]
+        # self.backbone = torch.nn.Sequential(*modules)
 
-    oriImgs = []
-    for numpy_image in numpy_images:
-        oriImg = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
-        oriImgs.append(oriImg)
-    oriImgs = np.array(oriImgs)
 
-    scale_search = 0.5
-    boxsize = 368
-    stride = 8
-    padValue = 128
-    thre1 = 0.1
-    thre2 = 0.05
+        # Linear layers
+        self.fc1 = nn.Linear(38 * 23 * 23, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, num_outputs)
 
-    # Calculate the multiplier for scaling
-    multipliers = scale_search * boxsize / oriImgs.shape[1]
+        self.num_outputs = num_outputs
 
-    # Resize images
-    resized_images = []
-    for oriImg in oriImgs:
-        resized_img = cv2.resize(oriImg, (0, 0), fx=multipliers, fy=multipliers, interpolation=cv2.INTER_CUBIC)
-        resized_images.append(resized_img)
-    resized_images = np.array(resized_images)
+    def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
+        """
+        Args:
+            x (torch.Tensor): Video tensor of shape (N X C x L x H x W)
+        Returns:
+            torch.Tensor: Output vector of length N, Loss
+        """
+        C, N, H, W = x.shape
+        # N X C X H X W -> N X H X W X C
+        x = x.transpose(0, 1)
+        data = transforms.process_image(x).to(self.device)
 
-    # Pad images
-    padded_images = []
-    pads = []
-    for i in range(x.shape[0]):
-        padded_image, pad = util.padRightDownCorner(resized_images[i], stride, padValue)
-        padded_images.append(padded_image)
-        pads.append(pad)
-    padded_images = np.stack(padded_images)
-    pads = np.stack(pads)
-
-    # Transpose and normalize images
-    im = np.transpose(np.float32(padded_images), (0, 3, 1, 2)) / 256 - 0.5
-    im = np.ascontiguousarray(im)
-
-    return torch.from_numpy(im.astype(np.float32))
-    
+        out, _ = self.model(data)
+        # out is (N*L, 38, 17, 17)
+        # COMPLETE CODE TO GET OUTPUT which should be (N) dimensional
+        # linear, relu, linear
+        out = out.reshape(N, -1)
+        out = self.fc1(out)
+        out = torch.relu(out)
+        out = self.fc2(out)
+        out = torch.relu(out)
+        output = self.fc3(out)
+                
+        loss = None
+        if targets is not None:
+            # MSE
+            loss = torch.nn.functional.mse_loss(output, targets)
+        print(output, loss)
+        return output, loss
