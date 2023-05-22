@@ -116,9 +116,9 @@ class ResnetLSTM(torch.nn.Module):
 
 
 class ResnetTransformer(torch.nn.Module):
-        def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6, device='cpu'):
+        def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=2, num_layers=2, device='cpu'):
             super(ResnetTransformer, self).__init__()
-            resnet_net = torchvision.models.resnet18(weights="DEFAULT")
+            resnet_net = torchvision.models.resnet18(weights="DEFAULT", pretrained=True)
             modules = list(resnet_net.children())[:-1]
             self.backbone = torch.nn.Sequential(*modules)
 
@@ -158,34 +158,29 @@ class ResnetTransformer(torch.nn.Module):
             x = self.linear1(x)
             x = torch.relu(x)
             output = self.linear2(x)
-            # pass to sigmoid to get probabilities
-            # output = torch.sigmoid(output)
-
-            # modified_target = torch.zeros_like(output)
-            # # Fill in ordinal target function, i.e. 0 -> [1,0,0,...]
-            # for i in range(modified_target.shape[0]):
-            #     modified_target[i,:int(targets[i])+1] = 1
-            # loss = (nn.MSELoss(reduction='none')(output, modified_target) * median_freq_weights).sum()
-
-            # output = torch.nn.functional.softmax(output, dim=1)
 
 
             loss = None
             if targets is not None:
-                # cross entropy loss- only can do with one output column. targets as int of shape (N,)
-                targets = targets.reshape(-1).long()
-                if median_freq_weights is not None:
-                    # binary cross entropy with class weights torch logits
-                    loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
+                if targets.shape[1] == 1:
+                    # cross entropy loss- only can do with one output column. targets as int of shape (N,)
+                    targets = targets.reshape(-1).long()
+                    if median_freq_weights is not None:
+                        # binary cross entropy with class weights torch logits
+                        loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
+                    else:
+                        loss = torch.nn.CrossEntropyLoss()(output, targets)
                 else:
-                    loss = torch.nn.CrossEntropyLoss()(output, targets)
+                    # binary cross entropy with class weights torch logits
+                    loss = torch.nn.BCEWithLogitsLoss(weight=median_freq_weights)(output, targets)
             # softmax but do not do gradient
-            with torch.no_grad():
-                output = torch.nn.functional.softmax(output, dim=1)
+            if targets.shape[1] == 1:
+                with torch.no_grad():
+                    output = torch.nn.functional.softmax(output, dim=1)
             return output, loss
 
 
-class BaseTransformer(torch.nn.Module):
+class BaseOpenPose(torch.nn.Module):
         def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6, device='cpu'):
             super(BaseTransformer, self).__init__()
             self.device = device

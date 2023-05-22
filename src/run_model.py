@@ -50,7 +50,7 @@ if __name__ == '__main__':
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
-            labels=['y_fall_risk'],
+            labels=['y_fall_risk_binary'],
             num_workers=3
         )
         # TensorBoard training log
@@ -61,11 +61,13 @@ if __name__ == '__main__':
                 num_workers=4, writer=writer, ckpt_path='expt/params.pt')
 
         if args.model_name == "Base":
-            model = model.BaseVideoModel(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.BaseVideoModel(num_outputs=5, L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "LSTM":
-            model = model.ResnetLSTM(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.ResnetLSTM(num_outputs=5, L=video_transformer.max_len, H=H, W=W, device=device)
         elif args.model_name == "Transformer":
-            model = model.BaseTransformer(num_outputs=3, L=video_transformer.max_len, H=H, W=W, device=device)
+            model = model.ResnetTransformer(num_outputs=5, L=video_transformer.max_len, H=H, W=W, device=device)
+        elif args.model_name == "OpenPose":
+            model = model.BaseOpenPose(num_outputs=5, L=video_transformer.max_len, H=H, W=W, device=device)
         else:
             raise ValueError(f"Model name {args.model_name} not recognized")
 
