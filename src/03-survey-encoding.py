@@ -23,7 +23,7 @@ if __name__ == "__main__":
             col for col in survey_data
             if col.find("TEXT") < 0 and
             col not in [
-                "subjectid", "Country", "State", "feedback_open", "continue", "difficult_open", "falling_1", "falling_2", "falling_3"
+                "Country", "State", "feedback_open", "continue", "difficult_open", "falling_1", "falling_2", "falling_3"
             ]
         ]
         survey_data = survey_data[kept_cols]
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             feat
             for feat in list(survey_datasets["train"].select_dtypes("object"))
             if feat in kept_cols
-            and feat not in ("targetSteps", "targetActiveTime")
+            and feat not in ("targetSteps", "targetActiveTime", "subjectid")
         ]
         for col in encoding_cols:
             split_col = survey_data[col].apply(lambda x: str(x).split(","))
