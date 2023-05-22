@@ -372,3 +372,32 @@ class VideoGrayscale(object):
             grayscaled_video[:, l, :, :] = frame
 
         return grayscaled_video
+
+class NormalizeVideoFrames(object):
+    """
+    Normalize a tensor video with mean and standard deviation.
+    """
+    def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]):
+        # per channel mean and standard deviation in RGB order
+        self.mean = mean
+        self.std = std
+        
+    def __call__(self, video):
+        """
+        Args:
+            video (torch.Tensor):  video (torch.Tensor): Video (3 x L x H x W) to be normalized.
+        
+        Returns:
+            torch.Tensor: Normalized video.
+        """
+
+        C, L, H, W = video.size()
+        normalized_video = torch.FloatTensor(C, L, H, W)
+
+        for l in range(L):
+            frame = video[:, l, :, :]
+            frame = torchvision.transforms.functional.normalize(frame, self.mean, self.std)
+            normalized_video[:, l, :, :] = frame
+
+        return normalized_video
+

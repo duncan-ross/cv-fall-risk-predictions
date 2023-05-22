@@ -79,8 +79,10 @@ class ResnetLSTM(torch.nn.Module):
         self.lstm = torch.nn.LSTM(512, 512, batch_first=True, bidirectional=True)
 
         # decoder for lstm fc layers
-        self.layer1 = nn.Linear(512*2, 256)
-        self.layer2 = nn.Linear(256, num_outputs)
+        self.layer1 = nn.Linear(512*2*L, 2048)
+        self.layer_norm = nn.LayerNorm(2048)
+        self.layer2 = nn.Linear(2048, 512)
+        self.layer3 = nn.Linear(512, num_outputs)
         
     
     def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
@@ -94,14 +96,19 @@ class ResnetLSTM(torch.nn.Module):
         x = x.transpose(1, 2)
         x = x.reshape(-1, x.shape[2], x.shape[3], x.shape[4])
         # apply resnet backbone but do not change weights
-        with torch.no_grad():
-            x = self.backbone(x)
+        # with torch.no_grad():
+        #     x = self.backbone(x)
+        x = self.backbone(x)
         x = x.reshape(N, L, -1)
         x, hidden = self.lstm(x)
-        x = hidden[0].transpose(0, 1).reshape(N, -1)
+        # x = hidden[0].transpose(0, 1).reshape(N, -1)
+        x = x.reshape(N, -1)
         x = self.layer1(x)
+        x = self.layer_norm(x)
         x = torch.nn.functional.relu(x)
-        output = self.layer2(x)
+        x = self.layer2(x)
+        x = torch.nn.functional.relu(x)
+        output = self.layer3(x)
 
         loss = None
         if targets is not None:
@@ -118,7 +125,7 @@ class ResnetLSTM(torch.nn.Module):
                 # class weights median freq[0] when class 0, median freq[1] when class 1
                 class_weights = median_freq_weights[targets[:, 0].long()]
                 # weighting these two losses equally
-                loss = torch.nn.BCEWithLogitsLoss()(output[:, 0], targets[:, 0])
+                loss = torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
                 loss += torch.nn.MSELoss()(output[:, 1:], targets[:, 1:])
         # softmax but do not do gradient
         if targets.shape[1] == 1:
@@ -128,7 +135,7 @@ class ResnetLSTM(torch.nn.Module):
             # sigmoid but do not do gradient
             with torch.no_grad():
                 final_output = torch.clone(output)
-                final_output[:, 0] = torch.sigmoid(output[:, 0])
+                final_output[:, 0] = torch.sigmoid(final_output[:, 0])
         print(final_output, loss)
         return final_output, loss
 
@@ -144,8 +151,7 @@ class ResnetTransformer(torch.nn.Module):
             self.transformer_encoder = nn.TransformerEncoder(
                 nn.TransformerEncoderLayer(d_model=512, nhead=num_heads),
                 num_layers=num_layers,
-                norm=nn.LayerNorm(512),
-                batch_first=True
+                norm=nn.LayerNorm(512)
             )
 
 
@@ -190,18 +196,28 @@ class ResnetTransformer(torch.nn.Module):
                     else:
                         loss = torch.nn.CrossEntropyLoss()(output, targets)
                 else:
-                    # binary cross entropy with class weights torch logits
-                    loss = torch.nn.BCEWithLogitsLoss(weight=median_freq_weights)(output, targets)
+                    # first target binary, rest is regression
+                    # class weights median freq[0] when class 0, median freq[1] when class 1
+                    class_weights = median_freq_weights[targets[:, 0].long()]
+                    # weighting these two losses equally
+                    loss = torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
+                    loss += torch.nn.MSELoss()(output[:, 1:], targets[:, 1:])
             # softmax but do not do gradient
             if targets.shape[1] == 1:
                 with torch.no_grad():
                     final_output = torch.nn.functional.softmax(output, dim=1)
+            else:
+                # sigmoid but do not do gradient
+                with torch.no_grad():
+                    final_output = torch.clone(output)
+                    final_output[:, 0] = torch.sigmoid(final_output[:, 0])
+            print(final_output, loss)
             return final_output, loss
 
 
 class BaseOpenPose(torch.nn.Module):
         def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6, device='cpu'):
-            super(BaseTransformer, self).__init__()
+            super(BaseOpenPose, self).__init__()
             self.device = device
             self.model = bodypose_model()
             model_dict = util.transfer(self.model, torch.load('model/body_pose_model.pth'))
@@ -240,19 +256,36 @@ class BaseOpenPose(torch.nn.Module):
             hid = hid.reshape(N, -1)
             output = self.fc1(hid)
             loss = None
+
+            # compute loss
             if targets is not None:
-                # cross entropy loss- only can do with one output column. targets as int of shape (N,)
-                targets = targets.reshape(-1).long()
-                if median_freq_weights is not None:
-                    # binary cross entropy with class weights torch logits
-                    loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
+                if targets.shape[1] == 1:
+                    # cross entropy loss- only can do with one output column. targets as int of shape (N,)
+                    targets = targets.reshape(-1).long()
+                    if median_freq_weights is not None:
+                        # binary cross entropy with class weights torch logits
+                        loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
+                    else:
+                        loss = torch.nn.CrossEntropyLoss()(output, targets)
                 else:
-                    loss = torch.nn.CrossEntropyLoss()(output, targets)
-            # softmax but do not do gradient
-            with torch.no_grad():
-                final_output = torch.nn.functional.softmax(output, dim=1)
-            print(final_output)
-            return final_output, loss
+                    # first target binary, rest is regression
+                    # class weights median freq[0] when class 0, median freq[1] when class 1
+                    class_weights = median_freq_weights[targets[:, 0].long()]
+                    # weighting these two losses equally
+                    loss = torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
+                    loss += torch.nn.MSELoss()(output[:, 1:], targets[:, 1:])
+                    
+            # output
+            if targets.shape[1] == 1:
+                with torch.no_grad():
+                    final_output = torch.nn.functional.softmax(output, dim=1)
+            else:
+                # sigmoid but do not do gradient
+                with torch.no_grad():
+                    final_output = torch.clone(output)
+                    final_output[:, 0] = torch.sigmoid(final_output[:, 0])
+                print(final_output)
+                return final_output, loss
 
 # Helper function to proc image for openpose
 def process_image(x):
