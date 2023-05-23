@@ -45,22 +45,26 @@ def train_mc(tune_config, filename, model_name, out_path):
     )
 
     # get the dataloaders. can make test and val sizes 0 if you don't want them
-    train_dl, val_dl, test_dl = dataloaders.get_mc_data_loaders(
-        video_transformer=video_transformer,
-        batch_size=1,
-        val_batch_size=1,
-        test_batch_size=1,
-        transforms=transforms,
-        preload_videos=False,
-        labels=[
-            "pelvis_tilt",
-            "ankle_angle_l",
-            "ankle_angle_r",
-            "hip_adduction_r",
-            "hip_adduction_l",
-        ],
-        num_workers=2,
-    )
+    if tune_config["dataloader"] == "mc":
+        train_dl, val_dl, test_dl = dataloaders.get_mc_data_loaders(
+            video_transformer=video_transformer,
+            batch_size=1,
+            val_batch_size=1,
+            test_batch_size=1,
+            transforms=transforms,
+            preload_videos=False,
+            labels=[
+                "pelvis_tilt",
+                "ankle_angle_l",
+                "ankle_angle_r",
+                "hip_adduction_r",
+                "hip_adduction_l",
+            ],
+            num_workers=2,
+        )
+    elif tune_config["dataloader"] == "vid":
+        raise NotImplementedError
+
     # TensorBoard training log
     writer = SummaryWriter(log_dir="expt/")
 
@@ -72,8 +76,11 @@ def train_mc(tune_config, filename, model_name, out_path):
         ckpt_path="expt/params_mc_testing.pt",
     )
 
-    model = ResNetMC(num_outputs=5, H=H, W=W)
-    #model = OpenPoseMC(num_outputs=5, H=H, W=W, device=device)
+    if model_name == "resnetMC":
+        model = ResNetMC(num_outputs=5, H=H, W=W)
+    elif model_name == "openposeMC":
+        model = OpenPoseMC(num_outputs=5, H=H, W=W, device=device)
+
     trainer = trainer.Trainer(
         model=model,
         train_dataloader=train_dl,
@@ -109,7 +116,8 @@ def main(model_name, outpath, num_samples=15, max_num_epochs=20, gpus_per_trial=
         "lr_decay": tune.choice([False, True]),
         "max_epochs": tune.choice([15, 20, 25]),
         "model_name" : model_name,
-        "freezing": tune.choice([False])
+        "freezing": tune.choice([False]),
+        "dataloader": global_args.dataloader,
     }
 
     scheduler = ASHAScheduler(
@@ -140,24 +148,27 @@ def main(model_name, outpath, num_samples=15, max_num_epochs=20, gpus_per_trial=
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument('--model', type=str, help='Choose baseMC/openposeMC', required=True)
+    argp.add_argument('--model', type=str, help='Choose resnetMC/openposeMC', required=True)
     clargs = argp.parse_args()
 
     import sys
     sys.stdout.fileno = lambda: False
 
     # Make args for tuning and set global equal to those args.
-    baseMC_args = Namespace(
-        reading_params_path=None,
+    resnetMC_args = Namespace(
         dataloader = "mc",
     )
     
-    if clargs.model == 'baseMC':
-         global_args = baseMC_args
-         params_output_name = "baseMC-model.params"
+    if clargs.model == 'resnetMC':
+         global_args = resnetMC_args
+         params_output_name = "resnetMC-model.params"
+         trials, epochs_per_trial  = 5, 20
+    elif clargs.model == 'openposeMC':
+         global_args = resnetMC_args
+         params_output_name = "openposeMC-model.params"
          trials, epochs_per_trial  = 5, 20
     else:
-         print("choose a valid model")
+         print("Choose a valid model.")
          sys.exit(0)
     model_name = clargs.model
         
