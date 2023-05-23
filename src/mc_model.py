@@ -88,7 +88,7 @@ if __name__ == "__main__":
     # get the dataloaders. can make test and val sizes 0 if you don't want them
     train_dl, val_dl, test_dl = dataloaders.get_mc_data_loaders(
         video_transformer=video_transformer,
-        batch_size=4,
+        batch_size=1,
         val_batch_size=1,
         test_batch_size=1,
         transforms=transforms,
@@ -134,6 +134,8 @@ if __name__ == "__main__":
         print("Val loss:", val_loss)
         if val_loss < best_val_loss:
             best_val_loss = val_loss
+            torch.save(model.state_dict(), "best_model")
+        torch.save(model.state_dict(), f"mc_model_{epoch}.params")
     # write csv of losses
     with open("mc_loss.csv", "w") as f:
         for train_loss, val_loss in zip(train_losses, val_losses):

@@ -113,8 +113,8 @@ class VideoFilePathToTensor(object):
 
         frames /= 255
         cap.release()
-        device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
-        frmaes = frames.to(device)
+        # device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
+        # frames = frames.to(device)
         return frames
 
 
@@ -440,7 +440,7 @@ class NormalizeVideoFrames(object):
 # Helper function to proc image for openpose
 def process_image(x):
     # Convert Torch tensor to numpy array
-    numpy_images = (x * 255).numpy()
+    numpy_images = (x * 255).cpu().numpy()
 
     # Transpose the image array if necessary
     if len(numpy_images.shape) == 4:

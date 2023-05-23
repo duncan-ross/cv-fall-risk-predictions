@@ -223,7 +223,7 @@ class BaseOpenPose(torch.nn.Module):
         self.model = bodypose_model()
         model_dict = util.transfer(self.model, torch.load('model/body_pose_model.pth'))
         self.model.load_state_dict(model_dict)
-        self.model = self.model.to(device)
+        self.model = self.model
         # modules = list(self.model.children())[:-1]
         # self.backbone = torch.nn.Sequential(*modules)
 
@@ -245,7 +245,7 @@ class BaseOpenPose(torch.nn.Module):
         N, C, L, H, W = x.shape
         x = x.transpose(1, 2)
         out = x.reshape(-1, x.shape[2], x.shape[3], x.shape[4])
-        data = transforms.process_image(out).to(self.device)
+        data = transforms.process_image(out)
 
         out, _ = self.model(data)
         # out is (N*L, 38, 17, 17)
