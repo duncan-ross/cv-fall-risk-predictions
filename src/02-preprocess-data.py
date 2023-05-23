@@ -21,14 +21,15 @@ for subject in range(1, 12):
             continue
 
         # Create a CSV file for the merged data
-        csv_file_path = os.path.join(sts_folder_path, f"{sts_folder}_merged.csv")
+        csv_file_path = os.path.join(root_folder, f"s{subject}_{sts_folder}.csv")
 
         # Collect data from each file
         data = []
         extension_types = (".sto", ".mot", ".trc")
 
-        # Iterate over the files in the STS folder
-        for file_name in os.listdir(sts_folder_path):
+        # Iterate over the files in the STS folder sort by extension
+        sorted_files = sorted(os.listdir(sts_folder_path), key=lambda x: x[-4:])
+        for file_name in sorted_files:
             file_path = os.path.join(sts_folder_path, file_name)
 
             # Check if the file is of the desired extension
