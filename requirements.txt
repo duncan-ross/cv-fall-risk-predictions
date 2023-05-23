@@ -42,6 +42,7 @@ rsa==4.9
 scikit-image==0.20.0
 scipy==1.9.1
 sympy==1.11.1
+tabulate==0.8.9
 tensorboard==2.13.0
 tensorboard-data-server==0.7.0
 tifffile==2023.4.12

@@ -337,3 +337,52 @@ class OpenPoseMC(torch.nn.Module):
             loss = torch.nn.functional.mse_loss(output, targets)
         print(output, loss)
         return output, loss
+    
+class ResNetMC(torch.nn.Module):
+    def __init__(self, num_outputs, H, W, hidden_size=256, num_heads=2, num_layers=2):
+        super(ResNetMC, self).__init__()
+        resnet_net = torchvision.models.resnet18(pretrained=True)
+        modules = list(resnet_net.children())[:-1]
+        self.backbone = torch.nn.Sequential(*modules)
+        self.num_outputs = num_outputs
+
+        # Linear layers
+        self.linear1 = nn.Linear(512, hidden_size)
+        self.linear2 = nn.Linear(hidden_size, self.num_outputs)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        targets: torch.Tensor = None,
+        median_freq_weights: torch.Tensor = None,
+    ) -> torch.Tensor:
+        """
+        Args:
+            x (torch.Tensor): Frames tensor of shape (C x N x H x W)
+            targets (torch.Tensor): Label tensor of shape (N x num_outputs)
+            median_freq_weights (torch.Tensor): Weights tensor of shape (num_classes,)
+        Returns:
+            torch.Tensor: Output tensor of shape (N x num_outputs)
+            torch.Tensor: Loss tensor
+        """
+        C, N, H, W = x.shape
+        # N X C X H X W -> N X H X W X C
+        x = x.transpose(0, 1)
+
+        # Pass the input through the backbone and apply the transformer encoder
+        with torch.no_grad():
+            x = self.backbone(x)
+
+        # Now we have a tensor of shape (N, -1)
+        x = x.view(N, -1)
+        x = self.linear1(x)
+        # x = torch.nn.functional.dropout(x, p=0.5, training=self.training)
+        x = torch.relu(x)
+        output = self.linear2(x)
+
+        loss = None
+        if targets is not None:
+            # MSE
+            loss = torch.nn.functional.mse_loss(output, targets)
+        print(output, loss)
+        return output, loss
