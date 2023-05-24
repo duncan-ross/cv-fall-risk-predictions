@@ -74,7 +74,7 @@ def get_mc_data_loaders(
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     ds_dict = {}
 
-    for ds in ["train", "val"]:
+    for ds in ["train", "val", "test"]:
         transforms = (
             transforms
             if ds == "train"
@@ -99,7 +99,7 @@ def get_mc_data_loaders(
             collate_fn=collate_fn,
         )
 
-    return ds_dict["train"], ds_dict["val"], None
+    return ds_dict["train"], ds_dict["val"], ds_dict["test"]
 
 
 def collate_fn(batch):
