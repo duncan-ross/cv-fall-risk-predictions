@@ -109,18 +109,19 @@ def train_mc(tune_config, filename, model_name, out_path):
             torch.save(model.state_dict(), os.path.join(ABS_PATH, f"{out_path}/best_model.params"))
             with open(os.path.join(ABS_PATH, f"{out_path}/best_model.txt"), 'w') as convert_file:
                 convert_file.write(json.dumps(tune_config))
+        tune.report(loss=(val_loss))
     # write csv of losses
     with open(os.path.join(ABS_PATH, f"{out_path}/loss.csv"), "w") as f:
         for train_loss, val_loss in zip(train_losses, val_losses):
             f.write(f"{train_loss},{val_loss}\n")
 
 
-def main(model_name, outpath, num_samples=5, max_num_epochs=20, gpus_per_trial=1, filename=None, version=''):
+def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1, filename=None, version=''):
     os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = "1"
     os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1" 
 
     tune_config = {
-        "lr": tune.uniform(5e-5, 9e-4),
+        "lr": tune.uniform(9e-5, 9e-4),
         "lr_decay": tune.choice([False, True]),
         "weight_decay": tune.choice([0.01, 0.001, 0.1]),
         "max_epochs": tune.choice([15, 20]),
