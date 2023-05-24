@@ -12,6 +12,8 @@ import data_loading.transforms as transforms
 import concurrent.futures
 import PIL
 import torchvision
+import os
+from settings import ABS_PATH
 
 
 class VideoLabelDataset(Dataset):
@@ -35,12 +37,12 @@ class VideoLabelDataset(Dataset):
                 on a video.
             preload_videos (bool): Whether to preload all videos into memory.
         """
-        self.video_folder = video_folder
+        self.video_folder = os.path.join(ABS_PATH, video_folder) 
         self.transform = transform
         self.video_transformer = video_transformer
         self.preload_videos = preload_videos
 
-        df = pd.read_csv(tabular_csv)
+        df = pd.read_csv(os.path.join(ABS_PATH, tabular_csv))
         self.labels = df[labels].values
         self.ids = df["subjectid"].values
         # load videos into memory if desired
@@ -113,7 +115,7 @@ class MotionCaptureDataset(Dataset):
         """
         # Iterate through the files in the root directory
         file_names = []
-        for file_name in os.listdir(video_folder):
+        for file_name in os.listdir(os.path.join(ABS_PATH, video_folder)):
             file_name_without_ext, _ = os.path.splitext(file_name)
             if (file_name_without_ext not in file_names) and (
                 file_name_without_ext.startswith("s")
@@ -121,7 +123,7 @@ class MotionCaptureDataset(Dataset):
                 file_names.append(file_name_without_ext)
 
         self.ids = file_names
-        self.video_folder = video_folder
+        self.video_folder = os.path.join(ABS_PATH, video_folder)
         self.transform = transform
         self.video_transformer = video_transformer
         self.preload_videos = preload_videos  # Not possible atm.

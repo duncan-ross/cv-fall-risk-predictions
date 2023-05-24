@@ -13,13 +13,15 @@ import random
 import argparse
 from typing import Any
 import modeling.trainer as trainer
-from data_loading import dataloaders, transforms
+from data_loading import dataloaders
+import data_loading
 from functools import partial
 from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
 import multiprocessing
 from modeling.model import OpenPoseMC, ResNetMC
+from settings import ABS_PATH
 
 torch.manual_seed(0)
 global_args = None;
@@ -33,13 +35,13 @@ def train_mc(tune_config, filename, model_name, out_path):
     device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
     print(device)
 
-    video_transformer = transforms.VideoFilePathToTensor(
+    video_transformer = data_loading.transforms.VideoFilePathToTensor(
         max_len=None, fps=10, padding_mode="last"
     )
     H, W = 256, 256
     transforms = torchvision.transforms.Compose(
         [
-            transforms.VideoResize([H, W]),
+            data_loading.transforms.VideoResize([H, W]),
             # transforms.VideoRandomHorizontalFlip(),
         ]
     )
@@ -77,11 +79,11 @@ def train_mc(tune_config, filename, model_name, out_path):
     )
 
     if model_name == "resnetMC":
-        model = ResNetMC(num_outputs=5, H=H, W=W)
+        model = ResNetMC(num_outputs=5, H=H, W=W, freeze=tune_config["freeze"])
     elif model_name == "openposeMC":
-        model = OpenPoseMC(num_outputs=5, H=H, W=W, device=device)
+        model = OpenPoseMC(num_outputs=5, H=H, W=W, device=device, freeze=tune_config["freeze"])
 
-    trainer = trainer.Trainer(
+    trainer_cls = trainer.Trainer(
         model=model,
         train_dataloader=train_dl,
         test_dataloader=test_dl,
@@ -94,29 +96,29 @@ def train_mc(tune_config, filename, model_name, out_path):
     best_val_loss = np.inf
     for epoch in range(train_config.max_epochs):
         print(epoch)
-        train_losses.append(trainer.train(split="train", step=epoch))
-        val_loss = trainer.train(split="val", step=epoch)
+        train_losses.append(trainer_cls.train(split="train", step=epoch))
+        val_loss = trainer_cls.train(split="val", step=epoch)
         val_losses.append(val_loss)
         print("Val loss:", val_loss)
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), f"{filename}_bestmodel_{epoch}.params")
+            torch.save(model.state_dict(), os.path.join(ABS_PATH, f"{out_path}/bestmodel_{epoch}.params"))
     # write csv of losses
     with open(f"{out_path}/loss.csv", "w") as f:
         for train_loss, val_loss in zip(train_losses, val_losses):
             f.write(f"{train_loss},{val_loss}\n")
 
 
-def main(model_name, outpath, num_samples=15, max_num_epochs=20, gpus_per_trial=1, filename=None, version=''):
+def main(model_name, outpath, num_samples=5, max_num_epochs=20, gpus_per_trial=1, filename=None, version=''):
     os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = "1"
     os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1" 
 
     tune_config = {
-        "lr": tune.loguniform(1e-6, 1e-4),
+        "lr": tune.loguniform(1e-5, 1e-4),
         "lr_decay": tune.choice([False, True]),
-        "max_epochs": tune.choice([15, 20, 25]),
+        "max_epochs": tune.choice([15, 20]),
         "model_name" : model_name,
-        "freezing": tune.choice([False]),
+        "freeze": tune.choice([False]),
         "dataloader": global_args.dataloader,
     }
 
@@ -134,7 +136,7 @@ def main(model_name, outpath, num_samples=15, max_num_epochs=20, gpus_per_trial=
     
     result = tune.run(
         partial(train_mc, filename=filename, model_name = model_name, out_path = outpath),
-        resources_per_trial={"cpu": 7, "gpu": gpus_per_trial},
+        resources_per_trial={"cpu": 4, "gpu": gpus_per_trial},
         config=tune_config,
         num_samples=num_samples,
         scheduler=scheduler,

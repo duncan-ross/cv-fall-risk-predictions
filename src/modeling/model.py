@@ -13,6 +13,7 @@ from PIL import Image
 from pytorch_openpose.src.model import bodypose_model
 from pytorch_openpose.src import util
 from data_loading import transforms
+from settings import BODY_MODEL_PATH
 
 
 class BaseVideoModel(torch.nn.Module):
@@ -221,7 +222,7 @@ class BaseOpenPose(torch.nn.Module):
         super(BaseOpenPose, self).__init__()
         self.device = device
         self.model = bodypose_model()
-        model_dict = util.transfer(self.model, torch.load('model/body_pose_model.pth'))
+        model_dict = util.transfer(self.model, BODY_MODEL_PATH)
         self.model.load_state_dict(model_dict)
         self.model = self.model
         # modules = list(self.model.children())[:-1]
@@ -290,11 +291,12 @@ class BaseOpenPose(torch.nn.Module):
 
 
 class OpenPoseMC(torch.nn.Module):
-    def __init__(self, num_outputs, H, W, hidden_size=512, device='cpu'):
+    def __init__(self, num_outputs, H, W, hidden_size=512, device='cpu', freeze: bool = True):
         super(OpenPoseMC, self).__init__()
         self.device = device
         self.model = bodypose_model()
-        model_dict = util.transfer(self.model, torch.load('model/body_pose_model.pth'))
+        
+        model_dict = util.transfer(self.model, torch.load(BODY_MODEL_PATH))
         self.model.load_state_dict(model_dict)
         self.model = self.model.to(device)
         # modules = list(self.model.children())[:-1]
@@ -307,6 +309,7 @@ class OpenPoseMC(torch.nn.Module):
         self.fc3 = nn.Linear(512, num_outputs)
 
         self.num_outputs = num_outputs
+        self.freeze = freeze
 
     def forward(self, x: torch.Tensor,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         """
@@ -320,7 +323,11 @@ class OpenPoseMC(torch.nn.Module):
         x = x.transpose(0, 1)
         data = transforms.process_image(x).to(self.device)
 
-        out, _ = self.model(data)
+        if self.freeze:
+            with torch.no_grad():
+                out, _ = self.model(data)
+        else:
+            out, _ = self.model(data)
         # out is (N*L, 38, 17, 17)
         # COMPLETE CODE TO GET OUTPUT which should be (N) dimensional
         # linear, relu, linear
@@ -335,11 +342,10 @@ class OpenPoseMC(torch.nn.Module):
         if targets is not None:
             # MSE
             loss = torch.nn.functional.mse_loss(output, targets)
-        print(output, loss)
         return output, loss
     
 class ResNetMC(torch.nn.Module):
-    def __init__(self, num_outputs, H, W, hidden_size=256, num_heads=2, num_layers=2):
+    def __init__(self, num_outputs, H, W, hidden_size=256, num_heads=2, num_layers=2, freeze=True):
         super(ResNetMC, self).__init__()
         resnet_net = torchvision.models.resnet18(pretrained=True)
         modules = list(resnet_net.children())[:-1]
@@ -349,6 +355,7 @@ class ResNetMC(torch.nn.Module):
         # Linear layers
         self.linear1 = nn.Linear(512, hidden_size)
         self.linear2 = nn.Linear(hidden_size, self.num_outputs)
+        self.freeze = freeze
 
     def forward(
         self,
@@ -370,7 +377,10 @@ class ResNetMC(torch.nn.Module):
         x = x.transpose(0, 1)
 
         # Pass the input through the backbone and apply the transformer encoder
-        with torch.no_grad():
+        if self.freeze:
+            with torch.no_grad():
+                x = self.backbone(x)
+        else:
             x = self.backbone(x)
 
         # Now we have a tensor of shape (N, -1)
