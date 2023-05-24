@@ -150,7 +150,7 @@ class MotionCaptureDataset(Dataset):
         tabular = (
             tabular[: reduced_rows * denom, :].view(reduced_rows, denom, m).mean(dim=1)
         )
-        tabular = torch.abs(tabular)
+        # tabular = torch.abs(tabular)
 
         if self.preload_videos:
             video = self.videos[index]

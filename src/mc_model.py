@@ -59,14 +59,14 @@ if __name__ == "__main__":
 
     train_config = trainer.TrainerConfig(
         max_epochs=15,
-        learning_rate=2e-4,
+        learning_rate=4e-4,
         num_workers=4,
         writer=writer,
         ckpt_path="expt/params_mc_testing.pt",
     )
 
-    model = ResNetMC(num_outputs=5, H=H, W=W)
-    #model = OpenPoseMC(num_outputs=5, H=H, W=W, device=device)
+    # model = ResNetMC(num_outputs=5, H=H, W=W)
+    model = OpenPoseMC(num_outputs=5, H=H, W=W, device=device, freeze=True)
     trainer = trainer.Trainer(
         model=model,
         train_dataloader=train_dl,

@@ -73,6 +73,7 @@ def train_mc(tune_config, filename, model_name, out_path):
     train_config = trainer.TrainerConfig(
         max_epochs=tune_config["max_epochs"],
         learning_rate=tune_config["lr"],
+        weight_decay=tune_config["weight_decay"],
         num_workers=4,
         writer=writer,
         ckpt_path="expt/params_mc_testing.pt",
@@ -94,6 +95,9 @@ def train_mc(tune_config, filename, model_name, out_path):
     train_losses = []
     val_losses = []
     best_val_loss = np.inf
+    out_path = "tuning/{}/trial_{}/".format(out_path, tune.get_trial_id().split('_')[1])
+    print(os.path.join(ABS_PATH, out_path))
+    os.makedirs(os.path.dirname(os.path.join(ABS_PATH, out_path)), exist_ok=True)
     for epoch in range(train_config.max_epochs):
         print(epoch)
         train_losses.append(trainer_cls.train(split="train", step=epoch))
@@ -102,9 +106,11 @@ def train_mc(tune_config, filename, model_name, out_path):
         print("Val loss:", val_loss)
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), os.path.join(ABS_PATH, f"{out_path}/bestmodel_{epoch}.params"))
+            torch.save(model.state_dict(), os.path.join(ABS_PATH, f"{out_path}/best_model.params"))
+            with open(os.path.join(ABS_PATH, f"{out_path}/best_model.txt"), 'w') as convert_file:
+                convert_file.write(json.dumps(tune_config))
     # write csv of losses
-    with open(f"{out_path}/loss.csv", "w") as f:
+    with open(os.path.join(ABS_PATH, f"{out_path}/loss.csv"), "w") as f:
         for train_loss, val_loss in zip(train_losses, val_losses):
             f.write(f"{train_loss},{val_loss}\n")
 
@@ -114,11 +120,12 @@ def main(model_name, outpath, num_samples=5, max_num_epochs=20, gpus_per_trial=1
     os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1" 
 
     tune_config = {
-        "lr": tune.loguniform(1e-5, 1e-4),
+        "lr": tune.uniform(5e-5, 9e-4),
         "lr_decay": tune.choice([False, True]),
+        "weight_decay": tune.choice([0.01, 0.001, 0.1]),
         "max_epochs": tune.choice([15, 20]),
         "model_name" : model_name,
-        "freeze": tune.choice([False]),
+        "freeze": tune.choice([True]),
         "dataloader": global_args.dataloader,
     }
 
