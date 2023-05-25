@@ -221,6 +221,42 @@ if __name__ == "__main__SKIP":
 
     for subj_id, videos, labels in test_loader:
         print(subj_id, videos.size(), label)
+    
+class SurveyDataset(Dataset):
+    def __init__(
+        self,
+        tabular_csv: str,
+        labels: List[str],
+    ):
+        """
+        Args:
+            tabular_csv (string): Path to the csv file with annotations.
+            labels (List[str]): List of labels to be extracted from the csv file.
+        """
+
+        df = pd.read_csv(os.path.join(ABS_PATH, tabular_csv))
+        self.labels = df[labels].values
+        self.ids = df["subjectid"].values
+        # load videos into memory if desired
+        self.data = df[
+            [col for col in df.columns[:141]
+             if df[col].isna().sum() == 0 and col != "subjectid"]
+        ]
+
+    def __len__(self):
+        return len(self.ids)
+
+    def __getitem__(self, index: int):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tuple: (subject id, video, label) where label is an array of labels.
+        """
+        obs = self.data.iloc[index]
+        label = self.labels[index]
+        return self.ids[index], torch.tensor(obs), torch.tensor(label)
+
 
 if __name__ == "__main__":
     # test for VideoDataset

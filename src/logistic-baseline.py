@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegressionCV
 import torch
+import torchvision
 
 
 vars_of_interest = {"Age": float, "Height": float, "Weight": float, "Sex": int}
@@ -28,6 +29,13 @@ device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
 video_transformer = transforms.VideoFilePathToTensor(
     max_len=35, fps=5, padding_mode="last"
 )
+
+H, W = 256, 256
+transforms = torchvision.transforms.Compose([
+                transforms.VideoResize([H, W]),
+                # transforms.VideoRandomHorizontalFlip(),
+            ])
+
 train_dl, _, _ = dataloaders.get_vid_data_loaders(
     video_transformer=video_transformer,
     batch_size=4,
