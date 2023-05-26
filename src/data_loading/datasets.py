@@ -251,9 +251,7 @@ class FusionDataset(Dataset):
         file_names = []
         for file_name in os.listdir(os.path.join(ABS_PATH, video_folder)):
             file_name_without_ext, _ = os.path.splitext(file_name)
-            if (file_name_without_ext not in file_names) and (
-                file_name_without_ext.startswith("s")
-            ):
+            if (file_name_without_ext not in file_names):
                 file_names.append(file_name_without_ext)
 
         self.ids = file_names
