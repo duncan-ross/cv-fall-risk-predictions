@@ -21,7 +21,7 @@ from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
 import multiprocessing
 from modeling.model import OpenPoseMC, ResNetMC
-from settings import ABS_PATH
+from settings import ABS_PATH, MC_RESPONSES
 
 torch.manual_seed(0)
 global_args = None;
@@ -55,13 +55,7 @@ def train_mc(tune_config, filename, model_name, out_path):
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
-            labels=[
-                "pelvis_tilt",
-                "ankle_angle_l",
-                "ankle_angle_r",
-                "hip_adduction_r",
-                "hip_adduction_l",
-            ],
+            labels=MC_RESPONSES,
             num_workers=2,
         )
     elif tune_config["dataloader"] == "vid":
@@ -80,9 +74,9 @@ def train_mc(tune_config, filename, model_name, out_path):
     )
 
     if model_name == "resnetMC":
-        model = ResNetMC(num_outputs=5, H=H, W=W, freeze=tune_config["freeze"])
+        model = ResNetMC(num_outputs=len(MC_RESPONSES), H=H, W=W, freeze=tune_config["freeze"])
     elif model_name == "openposeMC":
-        model = OpenPoseMC(num_outputs=5, H=H, W=W, device=device, freeze=tune_config["freeze"])
+        model = OpenPoseMC(num_outputs=len(MC_RESPONSES), H=H, W=W, device=device, freeze=tune_config["freeze"])
 
     trainer_cls = trainer.Trainer(
         model=model,
