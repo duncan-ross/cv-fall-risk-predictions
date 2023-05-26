@@ -1,7 +1,7 @@
 import torch
 import torchvision
 import torch.nn as nn
-from typing import Any
+from typing import Any, Tuple
 
 from torch.utils.data import Dataset
 import cv2
@@ -344,6 +344,7 @@ class OpenPoseMC(torch.nn.Module):
             loss = torch.nn.functional.mse_loss(output, targets)
         return output, loss
     
+    
 class ResNetMC(torch.nn.Module):
     def __init__(self, num_outputs, H, W, hidden_size=256, num_heads=2, num_layers=2, freeze=True):
         super(ResNetMC, self).__init__()
@@ -431,6 +432,88 @@ class SurveyModel(torch.nn.Module):
         Returns:
             torch.Tensor: Output vector of length D, Loss
         """
+        x = self.l1(x)
+        x = self.bn1(x)
+        x = self.d1(x)
+        x = self.relu1(x)
+        
+        x = self.l2(x)
+        x = self.bn2(x)
+        x = self.d2(x)
+        x = self.relu2(x)
+        
+        x = self.l3(x)
+        x = self.bn3(x)
+        x = self.d3(x)
+        x = self.relu3(x)
+
+        x = self.l4(x)
+        output = x
+
+        loss = None
+        if targets is not None:
+            # cross entropy loss- only can do with one output column. targets as int of shape (N,)
+            targets = targets.reshape(-1).long()
+            if median_freq_weights is not None:
+                loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
+            else:
+                loss = torch.nn.CrossEntropyLoss()(output, targets)
+        # softmax but do not do gradient
+        with torch.no_grad():
+            final_output = torch.nn.functional.softmax(output, dim=1)
+        return final_output, loss
+    
+
+class FusionModel(torch.nn.Module):
+    """
+    Fusion model for both video and survey data.
+    Each x that comes in is a tuple of (video, survey) where video is a tensor of shape (C x L x H x W)
+
+    First we pass the video through the MC model to get the positional output tensor of shape (L x D)
+    Then we pass this variable length tensor through an LSTM to get a hidden state of shape (1 x D) #TODO check this
+    We concatenate this hidden state with the survey data and pass it through a fully connected model 
+    to get the output vector of shape (1 x D)
+
+    """
+    def __init__(self, num_features: int, num_outputs: int, num_mc_outputs: int, device='cpu', mc_model_type="openposeMC", mc_model_path="", ):
+        super(SurveyModel, self).__init__()
+        H, W = 256, 256
+        if mc_model_type == "openposeMC":
+            self.mc_model = OpenPoseMC(num_outputs=len(num_mc_outputs), H=H, W=W, device=device, freeze=True)
+        elif mc_model_type == "resnetMC":
+            self.mc_model = ResNetMC(num_outputs=len(num_mc_outputs), H=H, W=W, device=device, freeze=True)
+        self.mc_model.load_state_dict(torch.load(mc_model_path))
+        self.mc_model.eval()
+
+        # Make lstm_model a simple lambda function that flattens the input and truncates the output to max length 50
+        self.lstm_model = lambda x: torch.flatten(x, start_dim=1, end_dim=2)[:, :50, :]
+
+        self.num_features = num_features
+        self.num_outputs = num_outputs
+        self.l1 = nn.Linear(in_features=self.num_features, out_features=100)
+        self.bn1 = nn.BatchNorm1d(num_features=100)
+        self.d1 = nn.Dropout()
+        self.relu1 = nn.ReLU()
+        self.l2 = nn.Linear(in_features=100, out_features=100)
+        self.bn2 = nn.BatchNorm1d(num_features=100)
+        self.d2 = nn.Dropout()
+        self.relu2 = nn.ReLU()
+        self.l3 = nn.Linear(in_features=100, out_features=100)
+        self.bn3 = nn.BatchNorm1d(num_features=100)
+        self.d3 = nn.Dropout()
+        self.relu3 = nn.ReLU()
+        self.l4 = nn.Linear(in_features=100, out_features=self.num_outputs)
+
+    
+    def forward(self, x: Tuple(torch.Tensor, torch.Tensor) ,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
+        
+        video, survey = x
+        with torch.no_grad():
+            mc_output = self.mc_model(video)
+            lstm_output = self.lstm_model(mc_output)
+        
+        x = torch.cat((lstm_output, survey), dim=1)
+
         x = self.l1(x)
         x = self.bn1(x)
         x = self.d1(x)
