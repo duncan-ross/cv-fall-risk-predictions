@@ -159,7 +159,7 @@ def get_fusion_data_loaders(
             else torchvision.transforms.Compose([transforms.transforms[0]])
         )
         dataset = FusionDataset(
-            video_folder=f"data/motion_capture/{ds}",
+            video_folder=f"data/videos/{ds}",
             tabular_csv=f"data/processed/{ds}-survey-data.csv",
             labels=labels,
             video_transformer=video_transformer,
@@ -185,15 +185,12 @@ def collate_fn(batch):
     # handle videos of different lengths
     # batch is a list of tuples (subj_id, video, label)
     subj_id, video, label = zip(*batch)
-    print(len(video))
-    sys.exit(0)
     video = torch.cat(video[0], dim=1)
     label = torch.cat(label, dim=0)
     return subj_id, video, label
 
 def fusion_collate_fn(batch):
     subj_id, data, label = zip(*batch)
-    print(len(data)) # Len is 4?
-    video, tabular = data
-    video = torch.cat(video, dim=1)
+    video, tabular = data[0]    
+    video = torch.cat(tuple(video[0]), dim=1)
     return subj_id, (video, tabular), label

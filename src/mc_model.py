@@ -80,8 +80,7 @@ if __name__ == "__main__":
             test_dataloader=test_dl,
             config=train_config,
             val_dataloader=val_dl,
-            median_freq_weights=False,
-            #freeze=True
+            median_freq_weights=False
         )
         train_losses = []
         val_losses = []

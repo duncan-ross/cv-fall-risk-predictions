@@ -298,7 +298,6 @@ class FusionDataset(Dataset):
 
         tabular = torch.tensor(self.data.iloc[index])
         output_label = torch.tensor(self.labels[index])
-
         return self.ids[index], (video, tabular), output_label
 
     def load_videos(self, video_transformer: transforms.VideoFilePathToTensor):

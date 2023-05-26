@@ -92,8 +92,8 @@ if __name__ == "__main__":
         # get the dataloaders. can make test and val sizes 0 if you don't want them
         train_dl, val_dl, test_dl = dataloaders.get_fusion_data_loaders(
             video_transformer=video_transformer,
-            batch_size=4,
-            val_batch_size=4,
+            batch_size=1,
+            val_batch_size=1,
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             ckpt_path="expt/params.pt",
         )
 
-        model = model.FusionModel(num_features=50, num_outputs=1, num_mc_outputs=5, mc_model_type="resnetMC",mc_model_path="/Users/duncanross/Desktop/cv-fall-risk-predictions/best_model.params")
+        model = model.FusionModel(num_features=58, num_outputs=3, num_mc_outputs=5, mc_model_type="resnetMC",mc_model_path="/Users/duncanross/Desktop/cv-fall-risk-predictions/best_model.params")
 
         trainer = trainer.Trainer(
             model=model,
@@ -124,7 +124,7 @@ if __name__ == "__main__":
         val_losses = []
         best_val_loss = np.inf
         for epoch in range(args.max_epochs):
-            print(epoch)
+            print("Epoch: ", epoch)
             train_losses.append(trainer.train(split="train", step=epoch))
             val_loss = trainer.train(split="val", step=epoch)
             val_losses.append(val_loss)
