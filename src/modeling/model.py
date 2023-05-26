@@ -477,15 +477,17 @@ class FusionModel(torch.nn.Module):
     to get the output vector of shape (1 x D)
 
     """
-    def __init__(self, num_features: int, num_outputs: int, num_mc_outputs: int, device='cpu', mc_model_type="resnetMC", mc_model_path="", ):
+    def __init__(self, num_features: int, num_outputs: int, num_mc_outputs: int, device='cpu', mc_model_type="resnetMC", mc_model_path=""):
         super(FusionModel, self).__init__()
         H, W = 256, 256
         if mc_model_type == "openposeMC":
             self.mc_model = OpenPoseMC(num_outputs=num_mc_outputs, H=H, W=W, device=device, freeze=True)
         elif mc_model_type == "resnetMC":
             self.mc_model = ResNetMC(num_outputs=num_mc_outputs, H=H, W=W, device=device, freeze=True)
-        #self.mc_model.load_state_dict(torch.load(mc_model_path))
-        #self.mc_model.eval()
+        print(mc_model_path)
+        
+        self.mc_model.load_state_dict(torch.load("/Users/duncanross/Desktop/cv-fall-risk-predictions/model/best_model.params"))
+        self.mc_model.eval()
 
         # Make lstm_model a simple lambda function that flattens the input and truncates the output to max length 50
         self.lstm_model = lambda x: torch.flatten(x, start_dim=1, end_dim=2)[:, :50, :]

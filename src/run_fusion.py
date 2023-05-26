@@ -29,7 +29,7 @@ argp.add_argument(
     "--reading_params_path",
     type=str,
     help="Path to the reading params file",
-    default="LSTM5_2.params",
+    default="./model/best_model.params",
 )
 argp.add_argument(
     "--outputs_path",
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             ckpt_path="expt/params.pt",
         )
 
-        model = model.FusionModel(num_features=58, num_outputs=3, num_mc_outputs=5, mc_model_type="resnetMC",mc_model_path="/Users/duncanross/Desktop/cv-fall-risk-predictions/best_model.params")
+        model = model.FusionModel(num_features=58, num_outputs=3, num_mc_outputs=5, mc_model_type="openposeMC", mc_model_path=args.reading_params_path)
 
         trainer = trainer.Trainer(
             model=model,
