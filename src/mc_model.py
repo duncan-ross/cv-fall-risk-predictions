@@ -20,7 +20,7 @@ from modeling.model import OpenPoseMC, ResNetMC
 
 
 argparser = argparse.ArgumentParser()
-argp.add_argument(
+argparser.add_argument(
     "function", help="Choose train or evaluate"
 )
 argparser.add_argument("--model_name", type=str, default="openposeMC")
@@ -110,7 +110,9 @@ if __name__ == "__main__":
 
     # test the model
     elif args.function == "evaluate":
+        model.to(device)
         model.load_state_dict(torch.load(args.model_path))
+        torch.set_grad_enabled(False)
         model.eval()
         test_losses = []
         predictions = []
@@ -122,16 +124,18 @@ if __name__ == "__main__":
             print(i)
             x = x.to(device)
             y = y.to(device)
-            pred = model(x)
-            test_losses.append(model.loss_fn(pred, y).item())
+            pred, loss = model(x, y)
+            print(loss)
+            test_losses.append(loss)
             predictions.append(pred.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())
-            subj_ids.append(subj_id[0])
+            print(subj_id)
+            subj_ids += [subj_id[0]] * pred.shape[0]
         predictions = np.concatenate(predictions, axis=0)
         labels = np.concatenate(labels, axis=0)
-        df = pd.DataFrame(predictions, columns=responses)
+        df = pd.DataFrame(predictions, columns=[f"pred_{i}" for i in responses])
         df["subj_id"] = subj_ids
-        df["label"] = labels
+        df[responses] = labels
         df.to_csv("mc_predictions.csv")
         print("Test loss:", np.mean(test_losses))
     else:

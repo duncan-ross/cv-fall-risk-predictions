@@ -107,13 +107,14 @@ def train_mc(tune_config, filename, model_name, out_path):
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             torch.save(model.state_dict(), os.path.join(ABS_PATH, f"{out_path}/best_model.params"))
+            tune_config["best_epoch"] = epoch
             with open(os.path.join(ABS_PATH, f"{out_path}/best_model.txt"), 'w') as convert_file:
                 convert_file.write(json.dumps(tune_config))
         tune.report(loss=(val_loss))
     # write csv of losses
     with open(os.path.join(ABS_PATH, f"{out_path}/loss.csv"), "w") as f:
-        for train_loss, val_loss in zip(train_losses, val_losses):
-            f.write(f"{train_loss},{val_loss}\n")
+        for tl, vl in zip(train_losses, val_losses):
+            f.write(f"{tl},{vl}\n")
 
 
 def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1, filename=None, version=''):
@@ -121,9 +122,9 @@ def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1
     os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1" 
 
     tune_config = {
-        "lr": tune.uniform(9e-5, 9e-4),
+        "lr": tune.choice([0.00045]),
         "lr_decay": tune.choice([False, True]),
-        "weight_decay": tune.choice([0.01, 0.001, 0.1]),
+        "weight_decay": tune.choice([0.01]),
         "max_epochs": tune.choice([15, 20]),
         "model_name" : model_name,
         "freeze": tune.choice([True]),
@@ -176,7 +177,7 @@ if __name__ == "__main__":
     elif clargs.model == 'openposeMC':
          global_args = resnetMC_args
          params_output_name = "openposeMC-model.params"
-         trials, epochs_per_trial  = 5, 20
+         trials, epochs_per_trial  = 1, 20
     else:
          print("Choose a valid model.")
          sys.exit(0)
