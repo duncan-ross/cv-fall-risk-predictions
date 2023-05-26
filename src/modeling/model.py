@@ -346,12 +346,14 @@ class OpenPoseMC(torch.nn.Module):
     
     
 class ResNetMC(torch.nn.Module):
-    def __init__(self, num_outputs, H, W, hidden_size=256, num_heads=2, num_layers=2, freeze=True):
+    def __init__(self, num_outputs, H, W, hidden_size=256, num_heads=2, num_layers=2, freeze=True,  device='cpu'):
         super(ResNetMC, self).__init__()
         resnet_net = torchvision.models.resnet18(pretrained=True)
         modules = list(resnet_net.children())[:-1]
         self.backbone = torch.nn.Sequential(*modules)
         self.num_outputs = num_outputs
+        self.device = device
+
 
         # Linear layers
         self.linear1 = nn.Linear(512, hidden_size)
@@ -475,15 +477,15 @@ class FusionModel(torch.nn.Module):
     to get the output vector of shape (1 x D)
 
     """
-    def __init__(self, num_features: int, num_outputs: int, num_mc_outputs: int, device='cpu', mc_model_type="openposeMC", mc_model_path="", ):
-        super(SurveyModel, self).__init__()
+    def __init__(self, num_features: int, num_outputs: int, num_mc_outputs: int, device='cpu', mc_model_type="resnetMC", mc_model_path="", ):
+        super(FusionModel, self).__init__()
         H, W = 256, 256
         if mc_model_type == "openposeMC":
-            self.mc_model = OpenPoseMC(num_outputs=len(num_mc_outputs), H=H, W=W, device=device, freeze=True)
+            self.mc_model = OpenPoseMC(num_outputs=num_mc_outputs, H=H, W=W, device=device, freeze=True)
         elif mc_model_type == "resnetMC":
-            self.mc_model = ResNetMC(num_outputs=len(num_mc_outputs), H=H, W=W, device=device, freeze=True)
-        self.mc_model.load_state_dict(torch.load(mc_model_path))
-        self.mc_model.eval()
+            self.mc_model = ResNetMC(num_outputs=num_mc_outputs, H=H, W=W, device=device, freeze=True)
+        #self.mc_model.load_state_dict(torch.load(mc_model_path))
+        #self.mc_model.eval()
 
         # Make lstm_model a simple lambda function that flattens the input and truncates the output to max length 50
         self.lstm_model = lambda x: torch.flatten(x, start_dim=1, end_dim=2)[:, :50, :]
@@ -505,11 +507,12 @@ class FusionModel(torch.nn.Module):
         self.l4 = nn.Linear(in_features=100, out_features=self.num_outputs)
 
     
-    def forward(self, x: Tuple(torch.Tensor, torch.Tensor) ,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
+    def forward(self, x: Any ,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         
         video, survey = x
         with torch.no_grad():
-            mc_output = self.mc_model(video)
+            #mc_output = self.mc_model(video)
+            mc_output = torch.rand(500, 5)
             lstm_output = self.lstm_model(mc_output)
         
         x = torch.cat((lstm_output, survey), dim=1)

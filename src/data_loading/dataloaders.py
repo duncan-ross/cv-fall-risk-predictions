@@ -147,14 +147,7 @@ def get_fusion_data_loaders(
     test_batch_size: int = 16,
     transforms: Any = None,
     preload_videos: bool = False,
-    video_labels: List = [
-        "pelvis_tilt",
-        "ankle_angle_l",
-        "ankle_angle_r",
-        "hip_adduction_r",
-        "hip_adduction_l",
-    ],
-    tabular_labels: List = ["y_fall_risk"],
+    labels: List = ["y_fall_risk"],
     num_workers: int = 0,
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     ds_dict = {}
@@ -168,8 +161,7 @@ def get_fusion_data_loaders(
         dataset = FusionDataset(
             video_folder=f"data/motion_capture/{ds}",
             tabular_csv=f"data/processed/{ds}-survey-data.csv",
-            video_labels=video_labels,
-            tabular_labels=tabular_labels,
+            labels=labels,
             video_transformer=video_transformer,
             transform=transforms,
             preload_videos=preload_videos,
@@ -183,7 +175,7 @@ def get_fusion_data_loaders(
             else test_batch_size,
             shuffle=True,
             num_workers=num_workers,
-            collate_fn=collate_fn,
+            collate_fn=fusion_collate_fn,
         )
 
     return ds_dict["train"], ds_dict["val"], ds_dict["test"]
@@ -193,6 +185,15 @@ def collate_fn(batch):
     # handle videos of different lengths
     # batch is a list of tuples (subj_id, video, label)
     subj_id, video, label = zip(*batch)
-    video = torch.cat(video, dim=1)
+    print(len(video))
+    sys.exit(0)
+    video = torch.cat(video[0], dim=1)
     label = torch.cat(label, dim=0)
     return subj_id, video, label
+
+def fusion_collate_fn(batch):
+    subj_id, data, label = zip(*batch)
+    print(len(data)) # Len is 4?
+    video, tabular = data
+    video = torch.cat(video, dim=1)
+    return subj_id, (video, tabular), label

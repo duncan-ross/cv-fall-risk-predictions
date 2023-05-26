@@ -19,9 +19,8 @@ import multiprocessing
 from modeling.model import OpenPoseMC, ResNetMC
 from settings import MC_RESPONSES
 
-
 argparser = argparse.ArgumentParser()
-argp.add_argument(
+argparser.add_argument(
     "function", help="Choose train or evaluate"
 )
 argparser.add_argument("--model_name", type=str, default="openposeMC")
@@ -82,7 +81,7 @@ if __name__ == "__main__":
             config=train_config,
             val_dataloader=val_dl,
             median_freq_weights=False,
-            freeze=True
+            #freeze=True
         )
         train_losses = []
         val_losses = []

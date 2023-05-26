@@ -233,7 +233,7 @@ class FusionDataset(Dataset):
         self,
         video_folder: str,
         tabular_csv: str,
-        tabular_labels: List[str],
+        labels: List[str],
         transform: Any = None,
         video_transformer=transforms.VideoFilePathToTensor(fps=50, padding_mode="last"),
         preload_videos: bool = True,
@@ -266,7 +266,7 @@ class FusionDataset(Dataset):
         self.videos = None
 
         df = pd.read_csv(os.path.join(ABS_PATH, tabular_csv))
-        self.tabular_labels = df[tabular_labels].values
+        self.labels = df[labels].values
         #self.ids = df["subjectid"].values # This SHOULD be the same as the file_names since we need them aligned
         self.data = df[
             [col for col in df.columns[:141]
@@ -297,7 +297,7 @@ class FusionDataset(Dataset):
             video = self.transform(video)
 
         tabular = torch.tensor(self.data.iloc[index])
-        output_label = torch.tensor(self.tabular_labels[index])
+        output_label = torch.tensor(self.labels[index])
 
         return self.ids[index], (video, tabular), output_label
 

@@ -212,7 +212,7 @@ class VideoResize(object):
     """
 
     def __init__(self, size, interpolation=PIL.Image.BILINEAR):
-        assert isinstance(size, collections.Iterable) and len(size) == 2
+        assert isinstance(size, collections.abc.Iterable) and len(size) == 2
         self.size = size
         self.interpolation = interpolation
 
