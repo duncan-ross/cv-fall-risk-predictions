@@ -208,10 +208,7 @@ class SurveyDataset(Dataset):
         self.labels = df[labels].values
         self.ids = df["subjectid"].values
         # load videos into memory if desired
-        self.data = df[
-            [col for col in df.columns[:141]
-             if df[col].isna().sum() == 0 and col != "subjectid"]
-        ]
+        self.data = df.drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid"])
 
     def __len__(self):
         return len(self.ids)
@@ -266,10 +263,7 @@ class FusionDataset(Dataset):
         df = pd.read_csv(os.path.join(ABS_PATH, tabular_csv))
         self.labels = df[labels].values
         #self.ids = df["subjectid"].values # This SHOULD be the same as the file_names since we need them aligned
-        self.data = df[
-            [col for col in df.columns[:141]
-             if df[col].isna().sum() == 0 and col != "subjectid"]
-        ]
+        self.data = df.drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid"])
 
 
     def __len__(self):

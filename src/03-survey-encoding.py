@@ -16,6 +16,10 @@ if __name__ == "__main__":
     survey_datasets["val"] = pd.read_csv("data/processed/val-survey-data.csv")
     survey_datasets["test"] = pd.read_csv("data/processed/test-survey-data.csv")
     for grp, survey_data in survey_datasets.items():
+        survey_data.to_csv(f"data/processed/{grp}-survey-data-old.csv", index=False)
+    initialize = True
+    out = {}
+    for grp, survey_data in survey_datasets.items():
         for col in ["targetSteps", "targetActiveTime"]:
             survey_data[col] = (
                 survey_data[col]
@@ -58,4 +62,14 @@ if __name__ == "__main__":
                     lambda x: any([y == val for y in x])
                 ).astype(int)
             survey_data.drop(columns=col, inplace=True)
-        survey_data.to_csv(f"data/processed/{grp}-survey-data.csv", index=False)
+        if initialize:
+            valid_columns = survey_data.columns
+            initialize = False
+        valid_columns = [
+            col for col in valid_columns
+            if col in survey_data.columns
+            and survey_data[col].isna().sum() == 0
+        ]
+        out[grp] = survey_data
+    for grp, survey_data in out.items():
+        survey_data[valid_columns].reset_index(drop=True).to_csv(f"data/processed/{grp}-survey-data.csv", index=False)
