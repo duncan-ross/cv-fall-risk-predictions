@@ -192,6 +192,124 @@ class MotionCaptureDataset(Dataset):
             )
 
 
+class SurveyDataset(Dataset):
+    def __init__(
+        self,
+        tabular_csv: str,
+        labels: List[str],
+    ):
+        """
+        Args:
+            tabular_csv (string): Path to the csv file with annotations.
+            labels (List[str]): List of labels to be extracted from the csv file.
+        """
+
+        df = pd.read_csv(os.path.join(ABS_PATH, tabular_csv))
+        self.labels = df[labels].values
+        self.ids = df["subjectid"].values
+        # load videos into memory if desired
+        self.data = df.drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid"])
+
+    def __len__(self):
+        return len(self.ids)
+
+    def __getitem__(self, index: int):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tuple: (subject id, video, label) where label is an array of labels.
+        """
+        obs = self.data.iloc[index]
+        label = self.labels[index]
+        return self.ids[index], torch.tensor(obs), torch.tensor(label)
+
+
+class FusionDataset(Dataset):
+    def __init__(
+        self,
+        video_folder: str,
+        tabular_csv: str,
+        labels: List[str],
+        transform: Any = None,
+        video_transformer=transforms.VideoFilePathToTensor(fps=50, padding_mode="last"),
+        preload_videos: bool = True,
+    ):
+        """
+        Args:
+            video_folder (string): Directory with all the videos.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+            video_transformer (callable, optional): Optional transform to be applied
+                on a video.
+            preload_videos (bool): Whether to preload all videos into memory.
+        """
+        # Iterate through the files in the root directory
+        file_names = []
+        for file_name in os.listdir(os.path.join(ABS_PATH, video_folder)):
+            file_name_without_ext, _ = os.path.splitext(file_name)
+            if (file_name_without_ext not in file_names):
+                file_names.append(file_name_without_ext)
+
+        self.ids = file_names
+        self.video_folder = os.path.join(ABS_PATH, video_folder)
+        self.transform = transform
+        self.video_transformer = video_transformer
+
+        # load videos into memory if desired
+        self.preload_videos = preload_videos  # Not possible atm.
+        self.videos = None
+
+        df = pd.read_csv(os.path.join(ABS_PATH, tabular_csv))
+        self.labels = df[labels].values
+        #self.ids = df["subjectid"].values # This SHOULD be the same as the file_names since we need them aligned
+        self.data = df.drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid"])
+
+
+    def __len__(self):
+        return len(self.ids)
+
+    def __getitem__(self, index: int):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tuple: (subject id, video, label) where label is an array of video_labels.
+        """
+
+        if self.preload_videos:
+            video = self.videos[index]
+        else:
+            # TODO can we get away with not redefining this every time??
+            video = self.video_transformer(
+                os.path.join(self.video_folder, self.ids[index] + ".mp4")
+            )
+
+        if self.transform:
+            video = self.transform(video)
+
+        tabular = torch.tensor(self.data.iloc[index])
+        output_label = torch.tensor(self.labels[index])
+        return self.ids[index], (video, tabular), output_label
+
+    def load_videos(self, video_transformer: transforms.VideoFilePathToTensor):
+        """
+        Loads all videos into memory.
+        """
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=os.cpu_count() // 2
+        ) as executor:
+            video_folder = self.video_folder
+            self.videos = list(
+                executor.map(
+                    lambda id: video_transformer(
+                        os.path.join(video_folder, id + ".mp4")
+                    ),
+                    self.ids,
+                )
+            )
+
+
 if __name__ == "__main__SKIP":
     # test for VideoDataset
     video_transformer = transforms.VideoFilePathToTensor(
@@ -221,41 +339,6 @@ if __name__ == "__main__SKIP":
 
     for subj_id, videos, labels in test_loader:
         print(subj_id, videos.size(), label)
-    
-class SurveyDataset(Dataset):
-    def __init__(
-        self,
-        tabular_csv: str,
-        labels: List[str],
-    ):
-        """
-        Args:
-            tabular_csv (string): Path to the csv file with annotations.
-            labels (List[str]): List of labels to be extracted from the csv file.
-        """
-
-        df = pd.read_csv(os.path.join(ABS_PATH, tabular_csv))
-        self.labels = df[labels].values
-        self.ids = df["subjectid"].values
-        # load videos into memory if desired
-        self.data = df[
-            [col for col in df.columns[:141]
-             if df[col].isna().sum() == 0 and col != "subjectid"]
-        ]
-
-    def __len__(self):
-        return len(self.ids)
-
-    def __getitem__(self, index: int):
-        """
-        Args:
-            index (int): Index
-        Returns:
-            tuple: (subject id, video, label) where label is an array of labels.
-        """
-        obs = self.data.iloc[index]
-        label = self.labels[index]
-        return self.ids[index], torch.tensor(obs), torch.tensor(label)
 
 
 if __name__ == "__main__":

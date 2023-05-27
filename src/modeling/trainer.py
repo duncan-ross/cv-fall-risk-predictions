@@ -36,7 +36,7 @@ class TrainerConfig:
     # checkpoint settings
     # checkpoint settings
     ckpt_path = None
-    num_workers = 0  # for DataLoader
+    num_workers = 0  # for DataLoaderx
     writer = None
 
     def __init__(self, **kwargs):
@@ -119,8 +119,11 @@ class Trainer:
         losses = []
         for it, (id, x, y) in pbar:
             # place data on the correct device
-            x = x.to(self.device)
-            if type(y) == list:
+            if type(x) == tuple: #TODO DUNCAN
+                x = tuple(xx.to(self.device) for xx in x)
+            else:
+                x = x.to(self.device)
+            if type(y) == list or type(y) == tuple:#TODO DUNCAN
                 y = [yy.to(self.device) for yy in y]
             else:
                 y = y.to(torch.float32).to(self.device)

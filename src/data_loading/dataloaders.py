@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 import torchvision
 
-from data_loading.datasets import VideoLabelDataset, MotionCaptureDataset, SurveyDataset
+from data_loading.datasets import *
 
 
 def get_vid_data_loaders(
@@ -101,6 +101,7 @@ def get_mc_data_loaders(
 
     return ds_dict["train"], ds_dict["val"], ds_dict["test"]
 
+
 def get_survey_data_loaders(
     batch_size: int = 32,
     val_batch_size: int = 16,
@@ -139,10 +140,57 @@ def get_survey_data_loaders(
     return ds_dict["train"], ds_dict["val"], ds_dict["test"]
 
 
+def get_fusion_data_loaders(
+    video_transformer: Any,
+    batch_size: int = 32,
+    val_batch_size: int = 16,
+    test_batch_size: int = 16,
+    transforms: Any = None,
+    preload_videos: bool = False,
+    labels: List = ["y_fall_risk"],
+    num_workers: int = 0,
+) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    ds_dict = {}
+
+    for ds in ["train", "val", "test"]:
+        transforms = (
+            transforms
+            if ds == "train"
+            else torchvision.transforms.Compose([transforms.transforms[0]])
+        )
+        dataset = FusionDataset(
+            video_folder=f"data/videos/{ds}",
+            tabular_csv=f"data/processed/{ds}-survey-data.csv",
+            labels=labels,
+            video_transformer=video_transformer,
+            transform=transforms,
+            preload_videos=preload_videos,
+        )
+        ds_dict[ds] = DataLoader(
+            dataset,
+            batch_size=batch_size
+            if ds == "train"
+            else val_batch_size
+            if ds == "val"
+            else test_batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            collate_fn=fusion_collate_fn,
+        )
+
+    return ds_dict["train"], ds_dict["val"], ds_dict["test"]
+
+
 def collate_fn(batch):
     # handle videos of different lengths
     # batch is a list of tuples (subj_id, video, label)
     subj_id, video, label = zip(*batch)
-    video = torch.cat(video, dim=1)
+    video = torch.cat(video[0], dim=1)
     label = torch.cat(label, dim=0)
     return subj_id, video, label
+
+def fusion_collate_fn(batch):
+    subj_id, data, label = zip(*batch)
+    video, tabular = data[0]    
+    video = torch.cat(tuple(video[0]), dim=1)
+    return subj_id, (video, tabular), label

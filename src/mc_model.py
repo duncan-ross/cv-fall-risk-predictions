@@ -17,7 +17,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import multiprocessing
 from modeling.model import OpenPoseMC, ResNetMC
-
+from settings import MC_RESPONSES
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument(
@@ -44,13 +44,6 @@ if __name__ == "__main__":
         ]
     )
 
-    responses = [
-            "pelvis_tilt",
-            "ankle_angle_l",
-            "ankle_angle_r",
-            "hip_adduction_r",
-            "hip_adduction_l",
-        ]
 
     # get the dataloaders. can make test and val sizes 0 if you don't want them
     train_dl, val_dl, test_dl = dataloaders.get_mc_data_loaders(
@@ -60,15 +53,19 @@ if __name__ == "__main__":
         test_batch_size=1,
         transforms=transforms,
         preload_videos=False,
-        labels=responses,
+        labels=MC_RESPONSES,
         num_workers=2,
     )
     # TensorBoard training log
     writer = SummaryWriter(log_dir="expt/")
     if args.model_name == "openposeMC":
-         model = OpenPoseMC(num_outputs=len(responses), H=H, W=W, device=device, freeze=True)
+         model = OpenPoseMC(num_outputs=len(MC_RESPONSES), H=H, W=W, device=device, freeze=True)
     elif args.model_name == "resnetMC":
+<<<<<<< HEAD
         model = ResNetMC(num_outputs=len(responses), H=H, W=W, freeze=True)
+=======
+        model = ResNetMC(num_outputs=len(MC_RESPONSES), H=H, W=W, device=device, freeze=True)
+>>>>>>> 44375055557735e6a3afd32e0a5228e1a62a52c7
     else:
         raise ValueError("Model name not recognized")
 
@@ -87,8 +84,7 @@ if __name__ == "__main__":
             test_dataloader=test_dl,
             config=train_config,
             val_dataloader=val_dl,
-            median_freq_weights=False,
-            freeze=True
+            median_freq_weights=False
         )
         train_losses = []
         val_losses = []
@@ -110,9 +106,7 @@ if __name__ == "__main__":
 
     # test the model
     elif args.function == "evaluate":
-        model.to(device)
         model.load_state_dict(torch.load(args.model_path))
-        torch.set_grad_enabled(False)
         model.eval()
         test_losses = []
         predictions = []
@@ -124,18 +118,23 @@ if __name__ == "__main__":
             print(i)
             x = x.to(device)
             y = y.to(device)
+<<<<<<< HEAD
             pred, loss = model(x, y)
             print(loss)
             test_losses.append(loss.cpu().numpy())
+=======
+            pred = model(x)
+            test_losses.append(model.loss_fn(pred, y).item())
+>>>>>>> 44375055557735e6a3afd32e0a5228e1a62a52c7
             predictions.append(pred.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())
-            print(subj_id)
+            # need subj id to be same length as predictions
             subj_ids += [subj_id[0]] * pred.shape[0]
         predictions = np.concatenate(predictions, axis=0)
         labels = np.concatenate(labels, axis=0)
-        df = pd.DataFrame(predictions, columns=[f"pred_{i}" for i in responses])
+        df = pd.DataFrame(predictions, columns=[f"pred_{i}" for i in MC_RESPONSES])
         df["subj_id"] = subj_ids
-        df[responses] = labels
+        df[MC_RESPONSES] = labels
         df.to_csv("mc_predictions.csv")
         print("Test loss:", np.mean(test_losses))
     else:
