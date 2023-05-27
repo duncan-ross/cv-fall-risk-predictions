@@ -13,7 +13,7 @@ import concurrent.futures
 import PIL
 import torchvision
 import os
-from settings import ABS_PATH
+from settings import ABS_PATH, TRAIN_VIDEO_LENGTH_AVG, TRAIN_VIDEO_LENGTH_STD
 
 
 class VideoLabelDataset(Dataset):
@@ -230,6 +230,7 @@ class FusionDataset(Dataset):
         self,
         video_folder: str,
         tabular_csv: str,
+        tabular_train_csv: str,
         labels: List[str],
         transform: Any = None,
         video_transformer=transforms.VideoFilePathToTensor(fps=50, padding_mode="last"),
@@ -264,6 +265,11 @@ class FusionDataset(Dataset):
         self.labels = df[labels].values
         #self.ids = df["subjectid"].values # This SHOULD be the same as the file_names since we need them aligned
         self.data = df.drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid"])
+        # standardize data based on training data
+        df_train = pd.read_csv(os.path.join(ABS_PATH, tabular_train_csv))
+        self.data = (self.data - df_train.mean()) / df_train.std()
+
+        
 
 
     def __len__(self):
@@ -288,7 +294,13 @@ class FusionDataset(Dataset):
         if self.transform:
             video = self.transform(video)
 
+        # append length of video to tabular data
+        video_len = video.shape[1]/self.video_transformer.fps
+        # standardize video length based on training data
+        video_len = (video_len - TRAIN_VIDEO_LENGTH_AVG) / TRAIN_VIDEO_LENGTH_STD
+        # 
         tabular = torch.tensor(self.data.iloc[index])
+        tabular = torch.cat((tabular, torch.tensor([video_len])))
         output_label = torch.tensor(self.labels[index])
         return self.ids[index], (video, tabular), output_label
 
@@ -310,14 +322,14 @@ class FusionDataset(Dataset):
             )
 
 
-if __name__ == "__main__SKIP":
+if __name__ == "__main__":
     # test for VideoDataset
     video_transformer = transforms.VideoFilePathToTensor(
-        max_len=None, fps=50, padding_mode="last"
+        max_len=None, fps=5, padding_mode="last"
     )
     dataset = VideoLabelDataset(
-        tabular_csv="data/processed/val-survey-data.csv",
-        video_folder="data/processed/val-videos",
+        tabular_csv="data/processed/train-survey-data.csv",
+        video_folder="data/processed/train-videos",
         labels=["y_fall_risk"],
         video_transformer=video_transformer,
         transform=torchvision.transforms.Compose(
@@ -328,23 +340,24 @@ if __name__ == "__main__SKIP":
         ),
         preload_videos=False,
     )
-    subj_id, video, label = dataset[0]
-    print(subj_id, video.size(), label)
-    frame1 = torchvision.transforms.ToPILImage()(video[:, 29, :, :])
-    frame2 = torchvision.transforms.ToPILImage()(video[:, 19, :, :])
-    frame1.show()
-    frame2.show()
 
-    test_loader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
-    for subj_id, videos, labels in test_loader:
-        print(subj_id, videos.size(), label)
+    vid_legths = []
+    for i, data in enumerate(test_loader):
+        subj_id, videos, labels = data
+        # keep running mean of video length
+        video_len = videos.shape[2] / video_transformer.fps
+        vid_legths.append(video_len)
+        print(subj_id, videos.size(), labels, video_len)
+    print("mean", np.mean(vid_legths))
+    print("std", np.std(vid_legths))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__SKIP":
     # test for VideoDataset
     video_transformer = transforms.VideoFilePathToTensor(
-        max_len=None, fps=50, padding_mode="last"
+        max_len=None, fps=1, padding_mode="last"
     )
     dataset = MotionCaptureDataset(
         video_folder="data/motion_capture",
@@ -354,7 +367,7 @@ if __name__ == "__main__":
         preload_videos=False,
     )
     subj_id, video, label = dataset[0]
-    test_loader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
     for subj_id, videos, labels in test_loader:
         # print(subj_id, videos.size(), label)
-        continue
+        print(subj_id, videos.size(), labels.size())
