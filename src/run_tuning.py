@@ -100,7 +100,9 @@ def train_mc(tune_config, filename, model_name, out_path):
     os.makedirs(os.path.dirname(os.path.join(ABS_PATH, out_path)), exist_ok=True)
     for epoch in range(train_config.max_epochs):
         print(epoch)
-        train_losses.append(trainer_cls.train(split="train", step=epoch))
+        train_loss = trainer_cls.train(split="train", step=epoch)
+        train_losses.append(train_loss)
+        print(train_losses)
         val_loss = trainer_cls.train(split="val", step=epoch)
         val_losses.append(val_loss)
         print("Val loss:", val_loss)
@@ -112,9 +114,8 @@ def train_mc(tune_config, filename, model_name, out_path):
                 convert_file.write(json.dumps(tune_config))
         tune.report(loss=(val_loss))
     # write csv of losses
-    with open(os.path.join(ABS_PATH, f"{out_path}/loss.csv"), "w") as f:
-        for tl, vl in zip(train_losses, val_losses):
-            f.write(f"{tl},{vl}\n")
+    df = pd.DataFrame({"train_loss": train_losses, "val_loss": val_losses})
+    df.to_csv(os.path.join(ABS_PATH, f"{out_path}/losses.csv"))
 
 
 def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1, filename=None, version=''):
@@ -122,9 +123,9 @@ def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1
     os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1" 
 
     tune_config = {
-        "lr": tune.choice([0.00045]),
+        "lr": tune.uniform(1e-4, 9e-4),
         "lr_decay": tune.choice([False, True]),
-        "weight_decay": tune.choice([0.01]),
+        "weight_decay": tune.choice([0.01, 0.05]),
         "max_epochs": tune.choice([15, 20]),
         "model_name" : model_name,
         "freeze": tune.choice([True]),
@@ -177,7 +178,7 @@ if __name__ == "__main__":
     elif clargs.model == 'openposeMC':
          global_args = resnetMC_args
          params_output_name = "openposeMC-model.params"
-         trials, epochs_per_trial  = 1, 20
+         trials, epochs_per_trial  = 5, 20
     else:
          print("Choose a valid model.")
          sys.exit(0)

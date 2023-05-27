@@ -68,7 +68,7 @@ if __name__ == "__main__":
     if args.model_name == "openposeMC":
          model = OpenPoseMC(num_outputs=len(responses), H=H, W=W, device=device, freeze=True)
     elif args.model_name == "resnetMC":
-        model = ResNetMC(num_outputs=len(responses), H=H, W=W, device=device, freeze=True)
+        model = ResNetMC(num_outputs=len(responses), H=H, W=W, freeze=True)
     else:
         raise ValueError("Model name not recognized")
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
             y = y.to(device)
             pred, loss = model(x, y)
             print(loss)
-            test_losses.append(loss)
+            test_losses.append(loss.cpu().numpy())
             predictions.append(pred.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())
             print(subj_id)

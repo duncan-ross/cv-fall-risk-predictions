@@ -340,8 +340,10 @@ class OpenPoseMC(torch.nn.Module):
                 
         loss = None
         if targets is not None:
-            # MSE
-            loss = torch.nn.functional.mse_loss(output, targets)
+            loss = torch.nn.functional.mse_loss(output, targets, reduction='none')
+            loss[:, 1:3] *= 2
+            loss[:, 3:] *= 2.5
+            loss = torch.mean(loss)
         return output, loss
     
 class ResNetMC(torch.nn.Module):
@@ -393,7 +395,10 @@ class ResNetMC(torch.nn.Module):
         loss = None
         if targets is not None:
             # MSE
-            loss = torch.nn.functional.mse_loss(output, targets)
+            loss = torch.nn.functional.mse_loss(output, targets, reduction='none')
+            loss[:, 1:3] *= 2
+            loss[:, 3:] *= 2.5
+            loss = torch.mean(loss)
         print(output, loss)
         return output, loss
 
