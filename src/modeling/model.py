@@ -479,9 +479,9 @@ class FusionModel(torch.nn.Module):
     Each x that comes in is a tuple of (video, survey) where video is a tensor of shape (C x L x H x W)
 
     First we pass the video through the MC model to get the positional output tensor of shape (L x D)
-    Then we pass this variable length tensor through an LSTM to get a hidden state of shape (1 x D) #TODO check this
+    Then we pass this variable length tensor through an LSTM to get a hidden state of shape (1 x 512)
     We concatenate this hidden state with the survey data and pass it through a fully connected model 
-    to get the output vector of shape (1 x D)
+    to get the final output
 
     """
     def __init__(self, num_features: int, num_outputs: int, num_mc_outputs: int, device='cpu', mc_model_type="resnetMC", mc_model_path=""):
