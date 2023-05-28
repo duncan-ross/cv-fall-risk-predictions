@@ -61,11 +61,8 @@ if __name__ == "__main__":
     if args.model_name == "openposeMC":
          model = OpenPoseMC(num_outputs=len(MC_RESPONSES), H=H, W=W, device=device, freeze=True)
     elif args.model_name == "resnetMC":
-<<<<<<< HEAD
-        model = ResNetMC(num_outputs=len(responses), H=H, W=W, freeze=True)
-=======
-        model = ResNetMC(num_outputs=len(MC_RESPONSES), H=H, W=W, device=device, freeze=True)
->>>>>>> 44375055557735e6a3afd32e0a5228e1a62a52c7
+        model = ResNetMC(num_outputs=len(MC_RESPONSES), H=H, W=W, freeze=True)
+        model = model.to(device)
     else:
         raise ValueError("Model name not recognized")
 
@@ -108,6 +105,7 @@ if __name__ == "__main__":
     elif args.function == "evaluate":
         model.load_state_dict(torch.load(args.model_path))
         model.eval()
+        torch.set_grad_enabled(False)
         test_losses = []
         predictions = []
         labels = []
@@ -118,14 +116,9 @@ if __name__ == "__main__":
             print(i)
             x = x.to(device)
             y = y.to(device)
-<<<<<<< HEAD
             pred, loss = model(x, y)
             print(loss)
             test_losses.append(loss.cpu().numpy())
-=======
-            pred = model(x)
-            test_losses.append(model.loss_fn(pred, y).item())
->>>>>>> 44375055557735e6a3afd32e0a5228e1a62a52c7
             predictions.append(pred.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())
             # need subj id to be same length as predictions

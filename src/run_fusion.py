@@ -71,15 +71,18 @@ if __name__ == "__main__":
     # Save the device
     device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
     print(device)
+    # video_transformer = transforms.VideoFilePathToTensor(
+    #     max_len=22 * 3, fps=3, padding_mode="zero"
+    # )
     video_transformer = transforms.VideoFilePathToTensor(
-        max_len=22 * 3, fps=3, padding_mode="zero"
+        max_len=None, fps=10, padding_mode="last"
     )
     H, W = 256, 256
     transforms = torchvision.transforms.Compose(
         [
             transforms.VideoResize([H, W]),
             # transforms.VideoRandomHorizontalFlip(),
-            transforms.NormalizeVideoFrames(),
+            # transforms.NormalizeVideoFrames(),
         ]
     )
 

@@ -185,7 +185,7 @@ def collate_fn(batch):
     # handle videos of different lengths
     # batch is a list of tuples (subj_id, video, label)
     subj_id, video, label = zip(*batch)
-    video = torch.cat(video[0], dim=1)
+    video = torch.cat(video, dim=1)
     label = torch.cat(label, dim=0)
     return subj_id, video, label
 
