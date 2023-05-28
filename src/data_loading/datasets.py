@@ -266,7 +266,7 @@ class FusionDataset(Dataset):
         #self.ids = df["subjectid"].values # This SHOULD be the same as the file_names since we need them aligned
         self.data = df.drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid"])
         # standardize data based on training data
-        df_train = pd.read_csv(os.path.join(ABS_PATH, tabular_train_csv))
+        df_train = pd.read_csv(os.path.join(ABS_PATH, tabular_train_csv)).drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid"])
         self.data = (self.data - df_train.mean()) / df_train.std()
 
         
