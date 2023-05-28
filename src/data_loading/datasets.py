@@ -298,7 +298,7 @@ class FusionDataset(Dataset):
         # standardize video length based on training data
         video_len = (video_len - TRAIN_VIDEO_LENGTH_AVG) / TRAIN_VIDEO_LENGTH_STD
         # 
-        tabular = torch.tensor(self.data.iloc[index])
+        tabular = torch.tensor(self.data.iloc[index], dtype=torch.float32)
         tabular = torch.cat((tabular, torch.tensor([video_len])))
         output_label = torch.tensor(self.labels[index])
         return self.ids[index], (video, tabular), output_label
