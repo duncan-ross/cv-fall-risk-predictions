@@ -10,3 +10,6 @@ MC_RESPONSES = [
             "hip_adduction_r",
             "hip_adduction_l",
         ]
+
+TRAIN_VIDEO_LENGTH_AVG=13.014925373134329
+TRAIN_VIDEO_LENGTH_STD=3.4991791673444075

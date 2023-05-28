@@ -161,6 +161,7 @@ def get_fusion_data_loaders(
         dataset = FusionDataset(
             video_folder=f"data/videos/{ds}",
             tabular_csv=f"data/processed/{ds}-survey-data.csv",
+            tabular_train_csv=f"data/processed/train-survey-data.csv",
             labels=labels,
             video_transformer=video_transformer,
             transform=transforms,
