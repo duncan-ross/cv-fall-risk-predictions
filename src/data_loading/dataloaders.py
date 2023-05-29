@@ -159,7 +159,7 @@ def get_fusion_data_loaders(
             else torchvision.transforms.Compose([transforms.transforms[0]])
         )
         dataset = FusionDataset(
-            video_folder=f"data/videos/{ds}",
+            video_folder=f"data/processed/{ds}-videos",
             tabular_csv=f"data/processed/{ds}-survey-data.csv",
             tabular_train_csv=f"data/processed/train-survey-data.csv",
             labels=labels,
@@ -192,8 +192,9 @@ def collate_fn(batch):
 
 def fusion_collate_fn(batch):
     subj_id, data, label = zip(*batch)
-    video = tuple(item[0] for item in data)
-    tabular = tuple(item[1] for item in data)
+    pad_count = tuple(item[0] for item in data)
+    video = tuple(item[1] for item in data)
+    tabular = tuple(item[2] for item in data)
     
     video = torch.stack(video, dim=0)
     tabular = torch.stack(tabular, dim=0)

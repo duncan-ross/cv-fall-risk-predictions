@@ -531,10 +531,6 @@ class FusionModel(torch.nn.Module):
         
         pad_count, videos, survey = x
         N, C, L, H, W = videos.shape
-        # unpad each video on the L dimension specified by pad_count for each N video
-        # pad count is a tensor of shape (N,)
-        for i in range(N):
-            videos[i, :, :-pad_count, :, :] = 0
 
 
         with torch.no_grad():
@@ -542,10 +538,14 @@ class FusionModel(torch.nn.Module):
             # Combine the N and L dimensions to get a list of N tensors of shape (C x L x H x W)
             videos = videos.transpose(0, 1).reshape(C, N*L, H, W)
             # Pass each video through the MC model to get a tensor of shape (N*L x D)
-            mc_output = self.mc_model(videos)
+            mc_output = self.mc_model(videos)[0]
             # Reshape the output to be N x L x D
             mc_output = mc_output.reshape(N, L, -1)
-        lstm_output = self.lstm_model(mc_output)
+        # unpad each video and concat
+        lstm_output = []
+        for i in range(N):
+            lstm_output.append(self.lstm_model(mc_output[i, :-pad_count[i]].unsqueeze(0)))
+        lstm_output = torch.stack(lstm_output, dim=0).squeeze(1)
 
         x = torch.cat((lstm_output, survey), dim=1)
     

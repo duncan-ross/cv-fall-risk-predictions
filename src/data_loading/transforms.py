@@ -106,14 +106,14 @@ class VideoFilePathToTensor(object):
                 if self.padding_mode == "zero":
                     # fill the rest frames with 0.0
                     frames[:, index:, :, :] = 0
-                    pad_count += 1
+                    pad_count = time_len - index
                 elif self.padding_mode == "last":
                     # fill the rest frames with the last frame
                     assert index > 0
                     frames[:, index:, :, :] = frames[:, index - 1, :, :].view(
                         self.channels, 1, height, width
                     )
-                    pad_count += 1
+                    pad_count = time_len - index
                 break
 
         frames /= 255
