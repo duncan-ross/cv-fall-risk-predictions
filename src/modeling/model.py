@@ -501,40 +501,30 @@ class FusionModel(torch.nn.Module):
         self.num_features = num_features
         self.num_outputs = num_outputs
         self.device = device
-        self.l1 = nn.Linear(in_features=self.num_features+512, out_features=100)
 
+        self.l1 = nn.Linear(in_features=self.num_features+512, out_features=128)
         self.d1 = nn.Dropout()
         self.relu1 = nn.ReLU()
-        self.l2 = nn.Linear(in_features=100, out_features=100)
 
+        self.l2 = nn.Linear(in_features=128, out_features=128)
         self.d2 = nn.Dropout()
         self.relu2 = nn.ReLU()
-        self.l3 = nn.Linear(in_features=100, out_features=100)
 
-        self.d3 = nn.Dropout()
-        self.relu3 = nn.ReLU()
-        self.l4 = nn.Linear(in_features=100, out_features=self.num_outputs)
+        #self.l3 = nn.Linear(in_features=128, out_features=128)
+        #self.d3 = nn.Dropout()
+        #self.relu3 = nn.ReLU()
+
+        self.l4 = nn.Linear(in_features=128, out_features=self.num_outputs)
 
 
     
     def forward(self, x: Any ,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         
         videos, survey = x
-
-        print("SHAPE OF VIDEO:", videos.shape)
         with torch.no_grad():
             mc_output = [self.mc_model(video)[0] for video in videos]
             mc_output = torch.stack(mc_output, dim=0)
-        
-        print("SHAPE OF MC OUTPUT:", mc_output.shape)
-
-        #L = torch.randint(250, 500, (1,)).item()
-        #mc_output = torch.rand(L, 5)
-        #mc_output = mc_output.to(self.device)
         lstm_output = self.lstm_model(mc_output)
-        # TODO: remove these
-        print("SHAPE OF LSTM OUTPUT:", lstm_output.shape)
-        print("SHAPE OF SURVEY:", survey.shape)
 
         x = torch.cat((lstm_output, survey), dim=1)
     
@@ -546,9 +536,9 @@ class FusionModel(torch.nn.Module):
         x = self.d2(x)
         x = self.relu2(x)
         
-        x = self.l3(x)
-        x = self.d3(x)
-        x = self.relu3(x)
+        #x = self.l3(x)
+        #x = self.d3(x)
+        #x = self.relu3(x)
 
         x = self.l4(x)
         output = x
@@ -560,7 +550,7 @@ class FusionModel(torch.nn.Module):
                 loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
             else:
                 loss = torch.nn.CrossEntropyLoss()(output, targets)
-        print("Loss: ",loss)
+        #print("Loss: ",loss)
         with torch.no_grad():
             final_output = torch.nn.functional.softmax(output, dim=1)
         return final_output, loss
@@ -576,6 +566,5 @@ class FusionLSTMModel(torch.nn.Module):
     def forward(self, input_data):
         _, (hidden, _) = self.lstm(input_data)
         x = hidden.transpose(0, 1).reshape(input_data.shape[0], -1)
-        #flattened_hidden = hidden[-1].view(-1, self.hidden_size)
         output = self.linear(x)
         return output

@@ -148,7 +148,7 @@ def get_fusion_data_loaders(
     transforms: Any = None,
     preload_videos: bool = False,
     labels: List = ["y_fall_risk"],
-    num_workers: int = 0,
+    num_workers: int = 2,
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     ds_dict = {}
 

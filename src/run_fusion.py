@@ -100,7 +100,7 @@ if __name__ == "__main__":
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
-            num_workers=0,
+            num_workers=2,
         )
         # TensorBoard training log
         writer = SummaryWriter(log_dir="expt/")
