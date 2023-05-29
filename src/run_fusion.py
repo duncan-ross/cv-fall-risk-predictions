@@ -75,7 +75,7 @@ if __name__ == "__main__":
     #     max_len=22 * 3, fps=3, padding_mode="zero"
     # )
     video_transformer = transforms.VideoFilePathToTensor(
-        max_len=3*30, fps=3, padding_mode="zero"
+        max_len=1*30, fps=1, padding_mode="zero"
     )
     H, W = 256, 256
     transforms = torchvision.transforms.Compose(
@@ -95,8 +95,8 @@ if __name__ == "__main__":
         # get the dataloaders. can make test and val sizes 0 if you don't want them
         train_dl, val_dl, test_dl = dataloaders.get_fusion_data_loaders(
             video_transformer=video_transformer,
-            batch_size=4,
-            val_batch_size=4,
+            batch_size=8,
+            val_batch_size=8,
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,

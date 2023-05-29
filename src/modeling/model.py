@@ -550,11 +550,11 @@ class FusionModel(torch.nn.Module):
         x = torch.cat((lstm_output, survey), dim=1)
     
         x = self.l1(x)
-        x = self.d1(x)
+        # x = self.d1(x)
         x = self.relu1(x)
         
         x = self.l2(x)
-        x = self.d2(x)
+        # x = self.d2(x)
         x = self.relu2(x)
         
         #x = self.l3(x)
@@ -583,9 +583,11 @@ class FusionLSTMModel(torch.nn.Module):
         self.hidden_size = hidden_size
         self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True, bidirectional=True)
         self.linear = nn.Linear(hidden_size*2, output_size)
+        self.relu = nn.ReLU()
 
     def forward(self, input_data):
         _, (hidden, _) = self.lstm(input_data)
         x = hidden.transpose(0, 1).reshape(input_data.shape[0], -1)
-        output = self.linear(x)
+        x = self.linear(x)
+        output = self.relu(x)
         return output
