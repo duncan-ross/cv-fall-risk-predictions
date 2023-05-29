@@ -348,18 +348,22 @@ class OpenPoseMC(torch.nn.Module):
     
     
 class ResNetMC(torch.nn.Module):
-    def __init__(self, num_outputs, H, W, hidden_size=256, num_heads=2, num_layers=2, freeze=True,  device='cpu'):
+    def __init__(self, num_outputs, H, W, hidden_size=1024, num_heads=2, num_layers=2, freeze=True,  device='cpu'):
         super(ResNetMC, self).__init__()
-        resnet_net = torchvision.models.resnet18(pretrained=True)
+        resnet_net = torchvision.models.resnet50(pretrained=True)
         modules = list(resnet_net.children())[:-1]
         self.backbone = torch.nn.Sequential(*modules)
+        self.backbone = self.backbone.to(device)
         self.num_outputs = num_outputs
         self.device = device
 
 
         # Linear layers
-        self.linear1 = nn.Linear(512, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, self.num_outputs)
+        self.linear1 = nn.Linear(2048, hidden_size)
+        self.norm1 = nn.LayerNorm(hidden_size)
+        self.linear2 = nn.Linear(hidden_size, 256)
+        self.norm2 = nn.LayerNorm(256)
+        self.linear3 = nn.Linear(256, self.num_outputs)
         self.freeze = freeze
 
     def forward(
@@ -391,9 +395,14 @@ class ResNetMC(torch.nn.Module):
         # Now we have a tensor of shape (N, -1)
         x = x.view(N, -1)
         x = self.linear1(x)
-        # x = torch.nn.functional.dropout(x, p=0.5, training=self.training)
+        x = self.norm1(x)
         x = torch.relu(x)
-        output = self.linear2(x)
+
+        x = self.linear2(x)
+        x = self.norm2(x)
+        x = torch.relu(x)
+
+        output = self.linear3(x)
 
         loss = None
         if targets is not None:
@@ -402,7 +411,7 @@ class ResNetMC(torch.nn.Module):
             loss[:, 1:3] *= 2
             loss[:, 3:] *= 2.5
             loss = torch.mean(loss)
-        print(output, loss)
+        # print(output, loss)
         return output, loss
 
 

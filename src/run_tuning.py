@@ -74,7 +74,7 @@ def train_mc(tune_config, filename, model_name, out_path):
     )
 
     if model_name == "resnetMC":
-        model = ResNetMC(num_outputs=len(MC_RESPONSES), H=H, W=W, freeze=tune_config["freeze"])
+        model = ResNetMC(num_outputs=len(MC_RESPONSES), H=H, W=W, freeze=tune_config["freeze"], device=device)
     elif model_name == "openposeMC":
         model = OpenPoseMC(num_outputs=len(MC_RESPONSES), H=H, W=W, device=device, freeze=tune_config["freeze"])
 
@@ -117,10 +117,10 @@ def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1
     os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1" 
 
     tune_config = {
-        "lr": tune.uniform(1e-4, 9e-4),
-        "lr_decay": tune.choice([False, True]),
-        "weight_decay": tune.choice([0.01, 0.05]),
-        "max_epochs": tune.choice([15, 20]),
+        "lr": tune.uniform(4.5e-4, 4.5e-4),
+        "lr_decay": tune.choice([False]),
+        "weight_decay": tune.choice([0.01]),
+        "max_epochs": tune.choice([35]),
         "model_name" : model_name,
         "freeze": tune.choice([True]),
         "dataloader": global_args.dataloader,
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     if clargs.model == 'resnetMC':
          global_args = resnetMC_args
          params_output_name = "resnetMC-model.params"
-         trials, epochs_per_trial  = 5, 20
+         trials, epochs_per_trial  = 1, 20
     elif clargs.model == 'openposeMC':
          global_args = resnetMC_args
          params_output_name = "openposeMC-model.params"
