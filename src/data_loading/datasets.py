@@ -285,8 +285,8 @@ class FusionDataset(Dataset):
         if self.preload_videos:
             video = self.videos[index]
         else:
-            # TODO can we get away with not redefining this every time??
-            video = self.video_transformer(
+            self.video_transformer.return_pad_count = True
+            pad_count, video = self.video_transformer(
                 os.path.join(self.video_folder, self.ids[index] + ".mp4")
             )
 
@@ -297,11 +297,12 @@ class FusionDataset(Dataset):
         video_len = video.shape[1]/self.video_transformer.fps
         # standardize video length based on training data
         video_len = (video_len - TRAIN_VIDEO_LENGTH_AVG) / TRAIN_VIDEO_LENGTH_STD
-        # 
+        # cast to tensor
         tabular = torch.tensor(self.data.iloc[index], dtype=torch.float32)
         tabular = torch.cat((tabular, torch.tensor([video_len])))
         output_label = torch.tensor(self.labels[index])
-        return self.ids[index], (video, tabular), output_label
+        pad_count = torch.tensor(pad_count)
+        return self.ids[index], (pad_count, video, tabular), output_label
 
     def load_videos(self, video_transformer: transforms.VideoFilePathToTensor):
         """

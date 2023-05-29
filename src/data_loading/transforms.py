@@ -37,12 +37,14 @@ class VideoFilePathToTensor(object):
             - 'last': padding the rest empty frames to the last frame.
     """
 
-    def __init__(self, max_len=None, fps=None, padding_mode=None):
+    def __init__(self, max_len=None, fps=None, padding_mode=None, return_pad_count=False):
         self.max_len = max_len
         self.fps = fps
         assert padding_mode in (None, "zero", "last")
         self.padding_mode = padding_mode
         self.channels = 3  # only available to read 3 channels video
+        # should i return a batch of (pad_count, video_tensor) or just video_tensor?
+        self.return_pad_count = return_pad_count
 
     def __call__(self, path):
         """
@@ -84,6 +86,7 @@ class VideoFilePathToTensor(object):
 
         frames = torch.FloatTensor(self.channels, time_len, height, width)
 
+        pad_count = 0
         for index in range(time_len):
             frame_index = sample_factor * index
 
@@ -103,18 +106,22 @@ class VideoFilePathToTensor(object):
                 if self.padding_mode == "zero":
                     # fill the rest frames with 0.0
                     frames[:, index:, :, :] = 0
+                    pad_count += 1
                 elif self.padding_mode == "last":
                     # fill the rest frames with the last frame
                     assert index > 0
                     frames[:, index:, :, :] = frames[:, index - 1, :, :].view(
                         self.channels, 1, height, width
                     )
+                    pad_count += 1
                 break
 
         frames /= 255
         cap.release()
         # device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
         # frames = frames.to(device)
+        if self.return_pad_count:
+            return pad_count, frames
         return frames
 
 

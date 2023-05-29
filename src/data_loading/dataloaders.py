@@ -198,4 +198,5 @@ def fusion_collate_fn(batch):
     video = torch.stack(video, dim=0)
     tabular = torch.stack(tabular, dim=0)
     label = torch.stack(label, dim=0)
-    return subj_id, (video, tabular), label
+    pad_count = torch.stack(pad_count, dim=0)
+    return subj_id, (pad_count, video, tabular), label

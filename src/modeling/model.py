@@ -13,7 +13,7 @@ from PIL import Image
 from pytorch_openpose.src.model import bodypose_model
 from pytorch_openpose.src import util
 from data_loading import transforms
-from settings import BODY_MODEL_PATH
+from settings import BODY_MODEL_PATH, BEST_MC_MODEL_PATH
 
 
 class BaseVideoModel(torch.nn.Module):
@@ -501,7 +501,7 @@ class FusionModel(torch.nn.Module):
         elif mc_model_type == "resnetMC":
             self.mc_model = ResNetMC(num_outputs=num_mc_outputs, H=H, W=W, device=device, freeze=True)
         
-        self.mc_model.load_state_dict(torch.load("/home/ubuntu/cv-fall-risk-predictions/model/best_model.params"))
+        self.mc_model.load_state_dict(torch.load(BEST_MC_MODEL_PATH))
         self.mc_model = self.mc_model.to(device)
         self.mc_model.eval()
         self.lstm_model = FusionLSTMModel(5, 256, 512)
@@ -529,10 +529,22 @@ class FusionModel(torch.nn.Module):
     
     def forward(self, x: Any ,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         
-        videos, survey = x
+        pad_count, videos, survey = x
+        N, C, L, H, W = videos.shape
+        # unpad each video on the L dimension specified by pad_count for each N video
+        # pad count is a tensor of shape (N,)
+        for i in range(N):
+            videos[i, :, :-pad_count, :, :] = 0
+
+
         with torch.no_grad():
-            mc_output = [self.mc_model(video)[0] for video in videos]
-            mc_output = torch.stack(mc_output, dim=0)
+            # Videos is a tensor of shape (N x C x L x H x W)
+            # Combine the N and L dimensions to get a list of N tensors of shape (C x L x H x W)
+            videos = videos.transpose(0, 1).reshape(C, N*L, H, W)
+            # Pass each video through the MC model to get a tensor of shape (N*L x D)
+            mc_output = self.mc_model(videos)
+            # Reshape the output to be N x L x D
+            mc_output = mc_output.reshape(N, L, -1)
         lstm_output = self.lstm_model(mc_output)
 
         x = torch.cat((lstm_output, survey), dim=1)

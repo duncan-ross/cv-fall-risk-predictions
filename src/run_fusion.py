@@ -75,7 +75,7 @@ if __name__ == "__main__":
     #     max_len=22 * 3, fps=3, padding_mode="zero"
     # )
     video_transformer = transforms.VideoFilePathToTensor(
-        max_len=None, fps=10, padding_mode="last"
+        max_len=None, fps=3, padding_mode="zero", max_len=3*30
     )
     H, W = 256, 256
     transforms = torchvision.transforms.Compose(
