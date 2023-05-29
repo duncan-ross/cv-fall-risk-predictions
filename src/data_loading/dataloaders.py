@@ -148,7 +148,7 @@ def get_fusion_data_loaders(
     transforms: Any = None,
     preload_videos: bool = False,
     labels: List = ["y_fall_risk"],
-    num_workers: int = 0,
+    num_workers: int = 2,
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     ds_dict = {}
 
@@ -192,6 +192,10 @@ def collate_fn(batch):
 
 def fusion_collate_fn(batch):
     subj_id, data, label = zip(*batch)
-    video, tabular = data[0]    
-    video = torch.cat(tuple(video[0]), dim=1)
+    video = tuple(item[0] for item in data)
+    tabular = tuple(item[1] for item in data)
+    
+    video = torch.stack(video, dim=0)
+    tabular = torch.stack(tabular, dim=0)
+    label = torch.stack(label, dim=0)
     return subj_id, (video, tabular), label

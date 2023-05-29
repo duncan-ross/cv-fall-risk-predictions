@@ -9,7 +9,7 @@ import logging
 from tqdm import tqdm
 from functools import partialmethod
 
-tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
+#tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
 import numpy as np
 
 import torch
@@ -135,9 +135,6 @@ class Trainer:
                 model.eval()
             with torch.set_grad_enabled(is_train):
                 logits, loss = model(x, y, median_freq_weights=self.median_freq_weights)
-                loss = (
-                    loss.mean()
-                )  # collapse all losses if they are scattered on multiple gpus
                 losses.append(loss.item())
             if is_train:
                 # backprop and update the parameters

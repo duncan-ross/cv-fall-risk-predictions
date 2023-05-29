@@ -264,12 +264,11 @@ class FusionDataset(Dataset):
         df = pd.read_csv(os.path.join(ABS_PATH, tabular_csv))
         self.labels = df[labels].values
         #self.ids = df["subjectid"].values # This SHOULD be the same as the file_names since we need them aligned
-        self.data = df.drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid"])
+        # dropping extra features that have no standard deviation
+        self.data = df.drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid", "SC1", "WHISH"])
         # standardize data based on training data
-        df_train = pd.read_csv(os.path.join(ABS_PATH, tabular_train_csv))
+        df_train = pd.read_csv(os.path.join(ABS_PATH, tabular_train_csv)).drop(columns=["y_fall_risk", "y_fall_risk_binary", "subjectid", "SC1", "WHISH"])
         self.data = (self.data - df_train.mean()) / df_train.std()
-
-        
 
 
     def __len__(self):
@@ -299,7 +298,7 @@ class FusionDataset(Dataset):
         # standardize video length based on training data
         video_len = (video_len - TRAIN_VIDEO_LENGTH_AVG) / TRAIN_VIDEO_LENGTH_STD
         # 
-        tabular = torch.tensor(self.data.iloc[index])
+        tabular = torch.tensor(self.data.iloc[index], dtype=torch.float32)
         tabular = torch.cat((tabular, torch.tensor([video_len])))
         output_label = torch.tensor(self.labels[index])
         return self.ids[index], (video, tabular), output_label

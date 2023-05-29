@@ -23,7 +23,7 @@ argp.add_argument(
     "--writing_params_path",
     type=str,
     help="Path to the writing params file",
-    default="base.params",
+    default="BEST_FUSION.params",
 )
 argp.add_argument(
     "--reading_params_path",
@@ -49,7 +49,7 @@ argp.add_argument(
     "--max_epochs",
     type=int,
     help="Number of epochs to train for",
-    default=15,
+    default=25,
     required=False,
 )
 argp.add_argument(
@@ -62,7 +62,7 @@ argp.add_argument(
     "--model_name",
     type=str,
     help="Name of model to use",
-    default="LSTM",
+    default="FUSION",
     required=False,
 )
 args = argp.parse_args()
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             test_batch_size=1,
             transforms=transforms,
             preload_videos=False,
-            num_workers=0,
+            num_workers=2,
         )
         # TensorBoard training log
         writer = SummaryWriter(log_dir="expt/")
@@ -113,7 +113,7 @@ if __name__ == "__main__":
             ckpt_path="expt/params.pt",
         )
 
-        model = model.FusionModel(num_features=58, num_outputs=3, num_mc_outputs=5, mc_model_type="openposeMC", mc_model_path=args.reading_params_path)
+        model = model.FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, mc_model_type="openposeMC", mc_model_path=args.reading_params_path, device=device)
 
         trainer = trainer.Trainer(
             model=model,
