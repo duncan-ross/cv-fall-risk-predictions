@@ -492,9 +492,11 @@ class FusionModel(torch.nn.Module):
         elif mc_model_type == "resnetMC":
             self.mc_model = ResNetMC(num_outputs=num_mc_outputs, H=H, W=W, device=device, freeze=True)
         
-        #self.mc_model.load_state_dict(torch.load("/Users/duncanross/Desktop/cv-fall-risk-predictions/model/best_model.params"))
+        #self.mc_model.load_state_dict(torch.load("/home/ubuntu/cv-fall-risk-predictions/model/best_model.params"))
+        self.mc_model.to(device)
         self.mc_model.eval()
         self.lstm_model = FusionLSTMModel(5, 256, 512)
+        self.lstm_model.to(device)
 
         self.num_features = num_features
         self.num_outputs = num_outputs
@@ -523,9 +525,12 @@ class FusionModel(torch.nn.Module):
         #    mc_output, _ = self.mc_model(video)
         L = torch.randint(250, 500, (1,)).item()
         mc_output = torch.rand(L, 5)
-
+        #mc_output.cpu()
+        self.lstm_model.to(self.device)
         lstm_output = self.lstm_model(mc_output)
-
+        #lstm_output.to(self.device)
+        #survey.to(self.device)
+        #print(self.device)
         # TODO: remove these
         print("SHAPE OF LSTM OUTPUT:", lstm_output.shape)
         print("SHAPE OF SURVEY:", survey.shape)
@@ -560,7 +565,7 @@ class FusionModel(torch.nn.Module):
         return final_output, loss
 
 
-class FusionLSTMModel(nn.Module):
+class FusionLSTMModel(torch.nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(FusionLSTMModel, self).__init__()
         self.hidden_size = hidden_size

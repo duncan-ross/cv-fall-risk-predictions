@@ -113,7 +113,7 @@ if __name__ == "__main__":
             ckpt_path="expt/params.pt",
         )
 
-        model = model.FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, mc_model_type="openposeMC", mc_model_path=args.reading_params_path)
+        model = model.FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, mc_model_type="openposeMC", mc_model_path=args.reading_params_path, device=device)
 
         trainer = trainer.Trainer(
             model=model,
