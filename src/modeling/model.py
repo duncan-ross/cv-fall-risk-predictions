@@ -492,11 +492,11 @@ class FusionModel(torch.nn.Module):
         elif mc_model_type == "resnetMC":
             self.mc_model = ResNetMC(num_outputs=num_mc_outputs, H=H, W=W, device=device, freeze=True)
         
-        #self.mc_model.load_state_dict(torch.load("/home/ubuntu/cv-fall-risk-predictions/model/best_model.params"))
-        self.mc_model.to(device)
+        self.mc_model.load_state_dict(torch.load("/home/ubuntu/cv-fall-risk-predictions/model/best_model.params"))
+        self.mc_model = self.mc_model.to(device)
         self.mc_model.eval()
         self.lstm_model = FusionLSTMModel(5, 256, 512)
-        self.lstm_model.to(device)
+        self.lstm_model = self.lstm_model.to(device)
 
         self.num_features = num_features
         self.num_outputs = num_outputs
@@ -519,23 +519,24 @@ class FusionModel(torch.nn.Module):
     
     def forward(self, x: Any ,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         
-        video, survey = x
+        videos, survey = x
 
-        #with torch.no_grad():
-        #    mc_output, _ = self.mc_model(video)
-        L = torch.randint(250, 500, (1,)).item()
-        mc_output = torch.rand(L, 5)
-        #mc_output.cpu()
-        self.lstm_model.to(self.device)
+        print("SHAPE OF VIDEO:", videos.shape)
+        with torch.no_grad():
+            mc_output = [self.mc_model(video)[0] for video in videos]
+            mc_output = torch.stack(mc_output, dim=0)
+        
+        print("SHAPE OF MC OUTPUT:", mc_output.shape)
+
+        #L = torch.randint(250, 500, (1,)).item()
+        #mc_output = torch.rand(L, 5)
+        #mc_output = mc_output.to(self.device)
         lstm_output = self.lstm_model(mc_output)
-        #lstm_output.to(self.device)
-        #survey.to(self.device)
-        #print(self.device)
         # TODO: remove these
         print("SHAPE OF LSTM OUTPUT:", lstm_output.shape)
         print("SHAPE OF SURVEY:", survey.shape)
 
-        x = torch.cat((lstm_output.squeeze(), survey), dim=0)
+        x = torch.cat((lstm_output, survey), dim=1)
     
         x = self.l1(x)
         x = self.d1(x)
@@ -550,11 +551,11 @@ class FusionModel(torch.nn.Module):
         x = self.relu3(x)
 
         x = self.l4(x)
-        output = x.unsqueeze(0)
+        output = x
 
         loss = None
         if targets is not None:
-            targets = targets[0].reshape(-1).long()
+            targets = targets.reshape(-1).long()
             if median_freq_weights is not None:
                 loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
             else:
@@ -570,10 +571,11 @@ class FusionLSTMModel(torch.nn.Module):
         super(FusionLSTMModel, self).__init__()
         self.hidden_size = hidden_size
         self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True, bidirectional=True)
-        self.linear = nn.Linear(hidden_size, output_size)
+        self.linear = nn.Linear(hidden_size*2, output_size)
 
     def forward(self, input_data):
         _, (hidden, _) = self.lstm(input_data)
-        flattened_hidden = hidden[-1].view(-1, self.hidden_size)
-        output = self.linear(flattened_hidden)
+        x = hidden.transpose(0, 1).reshape(input_data.shape[0], -1)
+        #flattened_hidden = hidden[-1].view(-1, self.hidden_size)
+        output = self.linear(x)
         return output

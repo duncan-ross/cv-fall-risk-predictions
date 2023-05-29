@@ -23,7 +23,7 @@ argp.add_argument(
     "--writing_params_path",
     type=str,
     help="Path to the writing params file",
-    default="base.params",
+    default="BEST_FUSION.params",
 )
 argp.add_argument(
     "--reading_params_path",
@@ -49,7 +49,7 @@ argp.add_argument(
     "--max_epochs",
     type=int,
     help="Number of epochs to train for",
-    default=15,
+    default=25,
     required=False,
 )
 argp.add_argument(
@@ -62,7 +62,7 @@ argp.add_argument(
     "--model_name",
     type=str,
     help="Name of model to use",
-    default="LSTM",
+    default="FUSION",
     required=False,
 )
 args = argp.parse_args()
