@@ -87,13 +87,7 @@ if __name__ == "__main__":
     )
 
     labels = ['y_fall_risk']
-
-    if args.function == "pretrain":
-        pass
-
-    elif args.function == "train":
-        # get the dataloaders. can make test and val sizes 0 if you don't want them
-        train_dl, val_dl, test_dl = dataloaders.get_fusion_data_loaders(
+    train_dl, val_dl, test_dl = dataloaders.get_fusion_data_loaders(
             video_transformer=video_transformer,
             batch_size=8,
             val_batch_size=8,
@@ -102,6 +96,11 @@ if __name__ == "__main__":
             preload_videos=False,
             num_workers=2,
         )
+
+    if args.function == "pretrain":
+        pass
+
+    elif args.function == "train":
         # TensorBoard training log
         writer = SummaryWriter(log_dir="expt/")
 
@@ -141,3 +140,34 @@ if __name__ == "__main__":
         with open(args.loss_path, "w") as f:
             for train_loss, val_loss in zip(train_losses, val_losses):
                 f.write(f"{train_loss},{val_loss}\n")
+
+    elif args.function == "evaluate":
+        # Load the model
+        model = model.FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, mc_model_type="openposeMC", mc_model_path=args.reading_params_path, device=device)
+        model.load_state_dict(torch.load(args.writing_params_path))
+        model.eval()
+        torch.set_grad_enabled(False)
+        pred_cols = [
+            'pred_fall_risk_0', 'pred_fall_risk_1', 'pred_fall_risk_2'
+        ]
+        actual_cols = labels
+        pbar = tqdm(enumerate(test_dl), total=len(test_dl))
+        for it, (subj_id, x, y) in pbar:
+            print(it)
+            # place data on the correct device
+            with torch.no_grad():
+                x = x.to(device)
+                pred = model(x)[0]
+                print(pred)
+                print(y)
+                predictions.append(
+                    (
+                        {
+                            "id": subj_id,
+                            **dict(zip(pred_cols, pred.tolist()[0])),
+                            **dict(zip(actual_cols, y.tolist()[0])),
+                        }
+                    )
+                )
+
+        pd.DataFrame(predictions).to_csv(args.outputs_path, index=False)
