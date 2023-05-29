@@ -530,6 +530,8 @@ class FusionModel(torch.nn.Module):
     def forward(self, x: Any ,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         
         pad_count, videos, survey = x
+        videos = videos.to(self.device)
+        survey = survey.to(self.device)
         N, C, L, H, W = videos.shape
 
 

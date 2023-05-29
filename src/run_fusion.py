@@ -29,7 +29,7 @@ argp.add_argument(
     "--reading_params_path",
     type=str,
     help="Path to the reading params file",
-    default="./model/best_model.params",
+    default="BEST_FUSION.params",
 )
 argp.add_argument(
     "--outputs_path",
@@ -145,18 +145,19 @@ if __name__ == "__main__":
         # Load the model
         model = model.FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, mc_model_type="openposeMC", mc_model_path=args.reading_params_path, device=device)
         model.load_state_dict(torch.load(args.writing_params_path))
+        model.to(device)
         model.eval()
         torch.set_grad_enabled(False)
         pred_cols = [
             'pred_fall_risk_0', 'pred_fall_risk_1', 'pred_fall_risk_2'
         ]
         actual_cols = labels
+        predictions = []
         pbar = tqdm(enumerate(test_dl), total=len(test_dl))
         for it, (subj_id, x, y) in pbar:
             print(it)
             # place data on the correct device
             with torch.no_grad():
-                x = x.to(device)
                 pred = model(x)[0]
                 print(pred)
                 print(y)

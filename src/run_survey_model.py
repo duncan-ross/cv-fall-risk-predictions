@@ -91,8 +91,8 @@ if __name__ == "__main__":
     elif args.function == "train":
         # get the dataloaders. can make test and val sizes 0 if you don't want them
         train_dl, val_dl, test_dl = dataloaders.get_survey_data_loaders(
-            batch_size=268,
-            val_batch_size=58,
+            batch_size=16,
+            val_batch_size=16,
             test_batch_size=1,
             transforms=transforms,
         )
