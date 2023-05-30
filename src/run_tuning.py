@@ -20,7 +20,7 @@ from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
 import multiprocessing
-from modeling.model import OpenPoseMC, ResNetMC
+from modeling.model import OpenPoseMC, ResNetMC, FusionModel
 from settings import ABS_PATH, MC_RESPONSES
 
 torch.manual_seed(0)
@@ -34,20 +34,18 @@ def train_mc(tune_config, filename, model_name, out_path):
     # Save the device
     device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
     print(device)
-
-    video_transformer = data_loading.transforms.VideoFilePathToTensor(
-        max_len=None, fps=10, padding_mode="last"
-    )
     H, W = 256, 256
-    transforms = torchvision.transforms.Compose(
-        [
-            data_loading.transforms.VideoResize([H, W]),
-            # transforms.VideoRandomHorizontalFlip(),
-        ]
-    )
 
     # get the dataloaders. can make test and val sizes 0 if you don't want them
     if tune_config["dataloader"] == "mc":
+        video_transformer = data_loading.transforms.VideoFilePathToTensor(
+        max_len=None, fps=10, padding_mode="last"
+        )
+        transforms = torchvision.transforms.Compose(
+            [
+                data_loading.transforms.VideoResize([H, W]),
+            ]
+        )
         train_dl, val_dl, test_dl = dataloaders.get_mc_data_loaders(
             video_transformer=video_transformer,
             batch_size=1,
@@ -56,6 +54,24 @@ def train_mc(tune_config, filename, model_name, out_path):
             transforms=transforms,
             preload_videos=False,
             labels=MC_RESPONSES,
+            num_workers=2,
+        )
+    elif tune_config["dataloader"] == "fusion":
+        video_transformer = data_loading.transforms.VideoFilePathToTensor(
+        max_len=2*30, fps=2, padding_mode="zero"
+        )
+        transforms = torchvision.transforms.Compose(
+            [
+                data_loading.transforms.VideoResize([H, W]),
+            ]
+        )
+        train_dl, val_dl, test_dl = dataloaders.get_fusion_data_loaders(
+            video_transformer=video_transformer,
+            batch_size=8,
+            val_batch_size=8,
+            test_batch_size=1,
+            transforms=transforms,
+            preload_videos=False,
             num_workers=2,
         )
     elif tune_config["dataloader"] == "vid":
@@ -77,6 +93,8 @@ def train_mc(tune_config, filename, model_name, out_path):
         model = ResNetMC(num_outputs=len(MC_RESPONSES), H=H, W=W, freeze=tune_config["freeze"], device=device)
     elif model_name == "openposeMC":
         model = OpenPoseMC(num_outputs=len(MC_RESPONSES), H=H, W=W, device=device, freeze=tune_config["freeze"])
+    elif model_name == "fusion":
+        model = FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, mc_model_type="openposeMC", mc_model_path=tune_config["reading_params_path"], device=device)
 
     trainer_cls = trainer.Trainer(
         model=model,
@@ -117,13 +135,14 @@ def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1
     os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1" 
 
     tune_config = {
-        "lr": tune.uniform(4.5e-4, 4.5e-4),
+        "lr": tune.uniform(1e-4, 9e-4),
         "lr_decay": tune.choice([False]),
-        "weight_decay": tune.choice([0.01]),
-        "max_epochs": tune.choice([35]),
+        "weight_decay": tune.choice([0.01, 0.005, 0.001]),
+        "max_epochs": tune.choice([8]),
         "model_name" : model_name,
         "freeze": tune.choice([True]),
         "dataloader": global_args.dataloader,
+        "reading_params_path": global_args.reading_params_path,
     }
 
     scheduler = ASHAScheduler(
@@ -140,7 +159,7 @@ def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1
     
     result = tune.run(
         partial(train_mc, filename=filename, model_name = model_name, out_path = outpath),
-        resources_per_trial={"cpu": 4, "gpu": gpus_per_trial},
+        resources_per_trial={"cpu": 6, "gpu": gpus_per_trial},
         config=tune_config,
         num_samples=num_samples,
         scheduler=scheduler,
@@ -154,7 +173,7 @@ def main(model_name, outpath, num_samples=3, max_num_epochs=20, gpus_per_trial=1
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser()
-    argp.add_argument('--model', type=str, help='Choose resnetMC/openposeMC', required=True)
+    argp.add_argument('--model', type=str, help='Choose resnetMC/openposeMC/fusion', required=True)
     clargs = argp.parse_args()
 
     import sys
@@ -164,7 +183,11 @@ if __name__ == "__main__":
     resnetMC_args = Namespace(
         dataloader = "mc",
     )
-    
+    fusion_args = Namespace(
+        dataloader = "fusion",
+        reading_params_path = "/home/ubuntu/cv-fall-risk-predictions/model/best_model2.params",
+    )
+
     if clargs.model == 'resnetMC':
          global_args = resnetMC_args
          params_output_name = "resnetMC-model.params"
@@ -173,6 +196,10 @@ if __name__ == "__main__":
          global_args = resnetMC_args
          params_output_name = "openposeMC-model.params"
          trials, epochs_per_trial  = 5, 20
+    elif clargs.model == 'fusion':
+        global_args = fusion_args
+        params_output_name = "fusion-model.params"
+        trials, epochs_per_trial  = 10, 8
     else:
          print("Choose a valid model.")
          sys.exit(0)
