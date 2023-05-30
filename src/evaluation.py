@@ -43,7 +43,7 @@ if __name__ == "__main__":
             labels=["y_fall_risk"],
             num_workers=0,
         )
-        weights = calculate_weights(train_dl, device).numpy()
+        weights = calculate_weights(train_dl, device).cpu().numpy()
         num = (np.diag(conf_mat) * weights).sum()
         den = (np.bincount(y_true) * weights).sum()
         acc = num / den

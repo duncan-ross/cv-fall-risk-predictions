@@ -427,17 +427,17 @@ class SurveyModel(torch.nn.Module):
         self.num_features = num_features
         self.num_outputs = num_outputs
         self.l1 = nn.Linear(in_features=self.num_features, out_features=100)
-        self.norm1 = nn.LayerNorm(normalized_shape=(100))
-        self.d1 = nn.Dropout()
+        # self.norm1 = nn.LayerNorm(normalized_shape=(100))
+        # self.d1 = nn.Dropout()
         self.relu1 = nn.ReLU()
         self.l2 = nn.Linear(in_features=100, out_features=100)
-        self.norm2 = nn.LayerNorm(normalized_shape=(100))
-        self.d2 = nn.Dropout()
+        # self.norm2 = nn.LayerNorm(normalized_shape=(100))
+        # self.d2 = nn.Dropout()
         self.relu2 = nn.ReLU()
-        self.l3 = nn.Linear(in_features=100, out_features=100)
-        self.norm3 = nn.LayerNorm(normalized_shape=(100))
-        self.d3 = nn.Dropout()
-        self.relu3 = nn.ReLU()
+        # self.l3 = nn.Linear(in_features=100, out_features=100)
+        # self.norm3 = nn.LayerNorm(normalized_shape=(100))
+        # self.d3 = nn.Dropout()
+        # self.relu3 = nn.ReLU()
         self.l4 = nn.Linear(in_features=100, out_features=self.num_outputs)
         self.device = device
 
@@ -451,19 +451,19 @@ class SurveyModel(torch.nn.Module):
         """
         x = x.float()
         x = self.l1(x)
-        x = self.norm1(x)
-        x = self.d1(x)
+        # x = self.norm1(x)
+        # x = self.d1(x)
         x = self.relu1(x)
         
         x = self.l2(x)
-        x = self.norm2(x)
-        x = self.d2(x)
+        # x = self.norm2(x)
+        # x = self.d2(x)
         x = self.relu2(x)
         
-        x = self.l3(x)
-        x = self.norm3(x)
-        x = self.d3(x)
-        x = self.relu3(x)
+        # x = self.l3(x)
+        # x = self.norm3(x)
+        # x = self.d3(x)
+        # x = self.relu3(x)
 
         x = self.l4(x)
         output = x
@@ -530,6 +530,8 @@ class FusionModel(torch.nn.Module):
     def forward(self, x: Any ,  targets: Any = None, median_freq_weights = None) -> torch.Tensor:
         
         pad_count, videos, survey = x
+        videos = videos.to(self.device)
+        survey = survey.to(self.device)
         N, C, L, H, W = videos.shape
 
 
