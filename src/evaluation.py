@@ -15,6 +15,7 @@ argp.add_argument("--loss", type=str, default="weighted_ce", required=False)
 if __name__ == "__main__":
     args = argp.parse_args()
     results = pd.read_csv(args.predictions_file)
+    print(f"Evaluating on {args.predictions_file}")
     probs = np.array(results.iloc[:, 1:4])  # Middle three columns
     y_true = np.array(results.iloc[:, -1]).reshape(-1)
     y_pred = np.argmax(probs, axis=1)
@@ -51,12 +52,9 @@ if __name__ == "__main__":
         e = "loss argument must be one of 'ce' (cross entropy) "
         e += "or 'weighted_ce (weighted cross entropy)"
         raise ValueError(e)
-    print(f"Class Weights: {weights}")
-    ce = cross_entropy(
-        input=torch.FloatTensor(probs),
-        target=torch.LongTensor(y_true),
-        weight=torch.FloatTensor(weights),
-    )
+    N = probs.shape[0]
+    l = -weights[y_true] * np.log(probs[np.arange(N), y_true])
+    ce = l.sum() / weights[y_true].sum()
     print(f"(Weighted) Cross-Entropy Loss on Test Set: {ce}")
     print(f"(Weighted) Accuracy on Test Set: {acc}")
-    print(f"Confusion Matrix of Results:\n{conf_mat}")
+    print(f"Confusion Matrix of Results:\n{conf_mat}\n")

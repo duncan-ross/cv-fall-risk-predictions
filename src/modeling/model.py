@@ -13,7 +13,8 @@ from PIL import Image
 from pytorch_openpose.src.model import bodypose_model
 from pytorch_openpose.src import util
 from data_loading import transforms
-from settings import BODY_MODEL_PATH, BEST_MC_MODEL_PATH
+from settings import BODY_MODEL_PATH, ABS_PATH
+import os
 
 
 class BaseVideoModel(torch.nn.Module):
@@ -501,7 +502,7 @@ class FusionModel(torch.nn.Module):
         elif mc_model_type == "resnetMC":
             self.mc_model = ResNetMC(num_outputs=num_mc_outputs, H=H, W=W, device=device, freeze=True)
         
-        self.mc_model.load_state_dict(torch.load(BEST_MC_MODEL_PATH))
+        self.mc_model.load_state_dict(torch.load(os.path.join(ABS_PATH, mc_model_path)))
         self.mc_model = self.mc_model.to(device)
         self.mc_model.eval()
         self.lstm_model = FusionLSTMModel(5, 256, 512)

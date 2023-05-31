@@ -29,7 +29,7 @@ argp.add_argument(
     "--reading_params_path",
     type=str,
     help="Path to the reading params file",
-    default="BEST_FUSION.params",
+    default="model/best_model2.params",
 )
 argp.add_argument(
     "--outputs_path",
