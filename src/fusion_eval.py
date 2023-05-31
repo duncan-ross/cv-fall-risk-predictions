@@ -12,6 +12,10 @@ from data_loading import dataloaders, transforms
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import multiprocessing
+from modeling.trainer import calculate_weights
+import os
+from sklearn.metrics import accuracy_score, confusion_matrix
+
 
 
 torch.manual_seed(0)
@@ -51,30 +55,29 @@ def prepare_model(dataset: str, fps: int):
         max_len=args.fps*30, fps=args.fps, padding_mode="zero"
     )
     H, W = 256, 256
-    transforms = torchvision.transforms.Compose(
+    extra_transforms = torchvision.transforms.Compose(
         [
             transforms.VideoResize([H, W]),
         ]
     )
-    labels = ['y_fall_risk']
     train_dl, val_dl, test_dl = dataloaders.get_fusion_data_loaders(
             video_transformer=video_transformer,
             batch_size=1,
             val_batch_size=1,
             test_batch_size=1,
-            transforms=transforms,
+            transforms=extra_transforms,
             preload_videos=False,
             num_workers=2,
         )
     class_weights = calculate_weights(train_dl, device).cpu().numpy()
     dl = {"train": train_dl, "val": val_dl, "test": test_dl}
-    dl = dl[args.dataset]
-    model = model.FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, 
+    dl = dl[dataset]
+    fusion_model = model.FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, 
     mc_model_type="openposeMC", mc_model_path=args.mc_model_path, device=device)
-    return model, dl, device, class_weights
+    return fusion_model, dl, device, class_weights
 
 # Foward through the fusion model- keep the losses
-def evaluate_model(model, dl, device, fusion_model_path):
+def evaluate_model(model, dl, class_weights, device, fusion_model_path):
     model.load_state_dict(torch.load(fusion_model_path))
     model.to(device)
     model.eval()
@@ -83,14 +86,16 @@ def evaluate_model(model, dl, device, fusion_model_path):
     pred_cols = [
             'pred_fall_risk_0', 'pred_fall_risk_1', 'pred_fall_risk_2'
         ]
-    actual_cols = labels
+    actual_cols = ['y_fall_risk']
     predictions = []
-    pbar = tqdm(enumerate(test_dl), total=len(test_dl))
+    pbar = tqdm(enumerate(dl), total=len(dl))
+    class_weights = torch.tensor(class_weights, device=device)
     for it, (subj_id, x, y) in pbar:
+        y = y.to(device)
         print(it)
         # place data on the correct device
         with torch.no_grad():
-            pred, loss = model(x, y)
+            pred, loss = model(x, y, class_weights)
             print(pred)
             print(y)
             predictions.append(
@@ -102,13 +107,14 @@ def evaluate_model(model, dl, device, fusion_model_path):
                     }
                 )
             )
+            losses.append(loss.item())
 
     preds_df = pd.DataFrame(predictions)
     return np.mean(losses), preds_df
 
 def get_weighted_accuracy(preds_df, class_weights):
-    probs = np.array(results.iloc[:, 1:4])  # Middle three columns
-    y_true = np.array(results.iloc[:, -1]).reshape(-1)
+    probs = np.array(preds_df.iloc[:, 1:4])  # Middle three columns
+    y_true = np.array(preds_df.iloc[:, -1]).reshape(-1)
     y_pred = np.argmax(probs, axis=1)
     conf_mat = confusion_matrix(y_true=y_true, y_pred=y_pred)
     num = (np.diag(conf_mat) * class_weights).sum()
@@ -132,18 +138,18 @@ def main():
             if file.endswith("best_model.params"):
                 fusion_model_path = os.path.join(root, file)
                 # Evaluate the model
-                loss, preds_df = evaluate_model(model, dl, device, fusion_model_path)
+                loss, preds_df = evaluate_model(model, dl, class_weights, device, fusion_model_path)
                 acc = get_weighted_accuracy(preds_df, class_weights)
                 if acc > best_acc:
                     # for now, we only care about accuracy
                     best_acc = acc
                     best_loss = loss
                     best_model_path = fusion_model_path
-                    preds_df.to_csv("best_val_preds.csv")
+                    preds_df.to_csv("best_val_preds.csv", index=False)
     # Evaluate the best model
     print("Best model path on val set: ", best_model_path)
     print("Best accuracy on val set: ", best_acc)
-    print("Loss on val set: ", loss)
+    print("Loss on val set: ", best_loss)
 
     # Evaluate the best model on test set
     model, dl, device, class_weights = prepare_model(dataset="test", fps=args.fps)
@@ -151,7 +157,7 @@ def main():
     acc = get_weighted_accuracy(preds_df, class_weights)
     print("Accuracy on test set: ", acc)
     print("Loss on test set: ", loss)
-    preds_df.to_csv("best_test_preds.csv")
+    preds_df.to_csv("best_test_preds.csv", index=False)
 
 if __name__ == "__main__":
     main()

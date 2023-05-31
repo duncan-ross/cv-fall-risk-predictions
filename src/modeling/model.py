@@ -13,7 +13,8 @@ from PIL import Image
 from pytorch_openpose.src.model import bodypose_model
 from pytorch_openpose.src import util
 from data_loading import transforms
-from settings import BODY_MODEL_PATH, BEST_MC_MODEL_PATH, ABS_PATH
+from settings import BODY_MODEL_PATH, ABS_PATH
+import os
 
 
 class BaseVideoModel(torch.nn.Module):
