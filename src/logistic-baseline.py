@@ -58,3 +58,9 @@ results = np.hstack((ids, preds_test, y_test.reshape(-1, 1)))
 pd.DataFrame(results, columns=["subjectid", "prob_0", "prob_1", "prob_2", "y"]).to_csv(
     "predictions/logistic-predictions.csv", index=False
 )
+preds_train = logistic.predict_proba(X_train)
+ids = pd.read_csv("data/processed/train-survey-data.csv", usecols=["subjectid"])
+results = np.hstack((ids, preds_train, y_train.reshape(-1, 1)))
+pd.DataFrame(results, columns=["subjectid", "prob_0", "prob_1", "prob_2", "y"]).to_csv(
+    "predictions/logistic-predictions-training.csv", index=False
+)
