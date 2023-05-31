@@ -52,7 +52,6 @@ if __name__ == "__main__":
         e = "loss argument must be one of 'ce' (cross entropy) "
         e += "or 'weighted_ce (weighted cross entropy)"
         raise ValueError(e)
-    print(f"Class Weights: {weights}")
     N = probs.shape[0]
     l = -weights[y_true] * np.log(probs[np.arange(N), y_true])
     ce = l.sum() / weights[y_true].sum()
