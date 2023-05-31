@@ -17,7 +17,7 @@ import multiprocessing
 torch.manual_seed(0)
 argp = argparse.ArgumentParser()
 argp.add_argument(
-    "function", help="Choose train or evaluate"
+    "function", help="Choose train or evaluate", default="evaluate"
 )  # TODO: add behavior for pretrain and eval
 argp.add_argument(
     "--writing_params_path",
@@ -29,7 +29,7 @@ argp.add_argument(
     "--reading_params_path",
     type=str,
     help="Path to the reading params file",
-    default="LSTM5_2.params",
+    default="/Users/spencersiegel/Documents/Stanford/Spring 2023/CS 231N/cv-fall-risk-predictions/predictions/transformer/Transformer_3.params",
 )
 argp.add_argument(
     "--outputs_path",
@@ -62,7 +62,7 @@ argp.add_argument(
     "--model_name",
     type=str,
     help="Name of model to use",
-    default="LSTM",
+    default="Transformer",
     required=False,
 )
 args = argp.parse_args()

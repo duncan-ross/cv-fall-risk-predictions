@@ -144,7 +144,7 @@ class ResnetLSTM(torch.nn.Module):
 
 
 class ResnetTransformer(torch.nn.Module):
-        def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=2, num_layers=2, device='cpu'):
+        def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6, device='cpu'):
             super(ResnetTransformer, self).__init__()
             resnet_net = torchvision.models.resnet18(weights="DEFAULT")
             modules = list(resnet_net.children())[:-1]
