@@ -135,7 +135,7 @@ def main():
     best_model_path = ""
     for root, dirs, files in os.walk(args.fusion_tuning_path):
         for file in files:
-            if file.endswith("best_model.params"):
+            if file.endswith(".params"):
                 fusion_model_path = os.path.join(root, file)
                 # Evaluate the model
                 loss, preds_df = evaluate_model(model, dl, class_weights, device, fusion_model_path)
