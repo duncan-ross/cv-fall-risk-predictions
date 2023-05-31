@@ -102,8 +102,9 @@ def train_mc(tune_config, filename, model_name, out_path):
         test_dataloader=test_dl,
         config=train_config,
         val_dataloader=val_dl,
-        median_freq_weights=False,
+        median_freq_weights=True,
     )
+
     train_losses = []
     val_losses = []
     best_val_loss = np.inf
@@ -124,6 +125,7 @@ def train_mc(tune_config, filename, model_name, out_path):
             tune_config["best_epoch"] = epoch
             with open(os.path.join(ABS_PATH, f"{out_path}/best_model.txt"), 'w') as convert_file:
                 convert_file.write(json.dumps(tune_config))
+        torch.save(model.state_dict(), os.path.join(ABS_PATH, f"{out_path}/final.params"))
         tune.report(loss=(val_loss))
     # write csv of losses
     df = pd.DataFrame({"train_loss": train_losses, "val_loss": val_losses})
@@ -199,7 +201,7 @@ if __name__ == "__main__":
     elif clargs.model == 'fusion':
         global_args = fusion_args
         params_output_name = "fusion-model.params"
-        trials, epochs_per_trial  = 10, 8
+        trials, epochs_per_trial  = 10, 10
     else:
          print("Choose a valid model.")
          sys.exit(0)
