@@ -153,7 +153,7 @@ def main():
 
     # Evaluate the best model on test set
     model, dl, device, class_weights = prepare_model(dataset="test", fps=args.fps)
-    loss, preds_df = evaluate_model(model, dl, device, best_model_path)
+    loss, preds_df = evaluate_model(model, dl, class_weights, device, best_model_path)
     acc = get_weighted_accuracy(preds_df, class_weights)
     print("Accuracy on test set: ", acc)
     print("Loss on test set: ", loss)
