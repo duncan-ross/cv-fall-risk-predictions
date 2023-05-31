@@ -187,7 +187,7 @@ if __name__ == "__main__":
     )
     fusion_args = Namespace(
         dataloader = "fusion",
-        reading_params_path = "/home/ubuntu/cv-fall-risk-predictions/model/best_model2.params",
+        reading_params_path = "model/best_model2.params",
     )
 
     if clargs.model == 'resnetMC':

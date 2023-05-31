@@ -2,7 +2,7 @@ import os
 
 ABS_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 BODY_MODEL_PATH = os.path.join(ABS_PATH, 'model/body_pose_model.pth')
-BEST_MC_MODEL_PATH =  os.path.join(ABS_PATH, 'model/best_model.params')
+# BEST_MC_MODEL_PATH =  os.path.join(ABS_PATH, 'model/best_model.params')
 
 MC_RESPONSES = [
             "pelvis_tilt",
