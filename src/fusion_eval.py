@@ -48,11 +48,11 @@ argp.add_argument(
 )
 args = argp.parse_args()
 
-def prepare_model(dataset: str, fps: int):
+def prepare_model(mc_model_path: str, dataset: str, fps: int):
     device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
     print(device)
     video_transformer = transforms.VideoFilePathToTensor(
-        max_len=args.fps*30, fps=args.fps, padding_mode="zero"
+        max_len=fps*30, fps=fps, padding_mode="zero"
     )
     H, W = 256, 256
     extra_transforms = torchvision.transforms.Compose(
@@ -73,7 +73,7 @@ def prepare_model(dataset: str, fps: int):
     dl = {"train": train_dl, "val": val_dl, "test": test_dl}
     dl = dl[dataset]
     fusion_model = model.FusionModel(num_features=123, num_outputs=3, num_mc_outputs=5, 
-    mc_model_type="openposeMC", mc_model_path=args.mc_model_path, device=device)
+    mc_model_type="openposeMC", mc_model_path=mc_model_path, device=device)
     return fusion_model, dl, device, class_weights
 
 # Foward through the fusion model- keep the losses
@@ -126,7 +126,7 @@ def main():
     # Loop through fusion_tuning_path and find all the best_model.params
     # For each best_model.params, load the model and evaluate it
     # Save the results in a csv
-    model, dl, device, class_weights = prepare_model(dataset="val", fps=args.fps)
+    model, dl, device, class_weights = prepare_model(mc_model_path=args.mc_model_path, dataset="val", fps=args.fps)
     # Loop through the fusion_tuning_path and find all the best_model.params
     # It could be nested in a folder. Generally we have a folder for each trial
     # within the fusion_tuning_path folder and each one has a best_model.params
@@ -152,7 +152,7 @@ def main():
     print("Loss on val set: ", best_loss)
 
     # Evaluate the best model on test set
-    model, dl, device, class_weights = prepare_model(dataset="test", fps=args.fps)
+    model, dl, device, class_weights = prepare_model(mc_model_path=args.mc_model_path, dataset="test", fps=args.fps)
     loss, preds_df = evaluate_model(model, dl, class_weights, device, best_model_path)
     acc = get_weighted_accuracy(preds_df, class_weights)
     print("Accuracy on test set: ", acc)
