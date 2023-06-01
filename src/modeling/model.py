@@ -144,7 +144,7 @@ class ResnetLSTM(torch.nn.Module):
 
 
 class ResnetTransformer(torch.nn.Module):
-        def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6, device='cpu'):
+        def __init__(self, num_outputs, L, H, W, hidden_size=512, num_heads=8, num_layers=6):
             super(ResnetTransformer, self).__init__()
             resnet_net = torchvision.models.resnet18(weights="DEFAULT")
             modules = list(resnet_net.children())[:-1]
@@ -157,6 +157,8 @@ class ResnetTransformer(torch.nn.Module):
                 norm=nn.LayerNorm(512)
             )
 
+            # Global average pooling to reduce the number of features
+            self.adaptive_maxpool = nn.AdaptiveMaxPool2d((1, 1))
 
             # Linear layers
             self.linear1 = nn.Linear(512*L, hidden_size)
@@ -170,52 +172,44 @@ class ResnetTransformer(torch.nn.Module):
                 torch.Tensor: Output vector of length D, Loss
             """
             N, C, L, H, W = x.shape
-            x = x.transpose(1, 2)
-            x = x.reshape(-1, x.shape[2], x.shape[3], x.shape[4])
+            x = x.view(-1, C, H, W)
 
             # Pass the input through the backbone and apply the transformer encoder
             with torch.no_grad():
                 x = self.backbone(x)
-            x = x.view(N, L, -1).transpose(0, 1)
+            x = x.view(N, L, -1).permute(1, 0, 2)
             x = self.transformer_encoder(x)
-            # Now we have a tensor of shape (N, L, -1)
-            x = x.transpose(0, 1)
-            x = x.reshape(N, -1)
+            x = x.permute(1, 2, 0).contiguous().view(N, -1, 1, 1)
 
-
+            x = self.adaptive_maxpool(x).view(N, -1)
             x = self.linear1(x)
             x = torch.relu(x)
             output = self.linear2(x)
+            # pass to sigmoid to get probabilities
+            # output = torch.sigmoid(output)
+
+            # modified_target = torch.zeros_like(output)
+            # # Fill in ordinal target function, i.e. 0 -> [1,0,0,...]
+            # for i in range(modified_target.shape[0]):
+            #     modified_target[i,:int(targets[i])+1] = 1
+            # loss = (nn.MSELoss(reduction='none')(output, modified_target) * median_freq_weights).sum()
+
+            # output = torch.nn.functional.softmax(output, dim=1)
 
 
             loss = None
             if targets is not None:
-                if targets.shape[1] == 1:
-                    # cross entropy loss- only can do with one output column. targets as int of shape (N,)
-                    targets = targets.reshape(-1).long()
-                    if median_freq_weights is not None:
-                        # binary cross entropy with class weights torch logits
-                        loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
-                    else:
-                        loss = torch.nn.CrossEntropyLoss()(output, targets)
+                # cross entropy loss- only can do with one output column. targets as int of shape (N,)
+                targets = targets.reshape(-1).long()
+                if median_freq_weights is not None:
+                    # binary cross entropy with class weights torch logits
+                    loss = torch.nn.CrossEntropyLoss(weight=median_freq_weights)(output, targets)
                 else:
-                    # first target binary, rest is regression
-                    # class weights median freq[0] when class 0, median freq[1] when class 1
-                    class_weights = median_freq_weights[targets[:, 0].long()]
-                    # weighting these two losses equally
-                    loss = torch.nn.BCEWithLogitsLoss(weight=class_weights)(output[:, 0], targets[:, 0])
-                    loss += torch.nn.MSELoss()(output[:, 1:], targets[:, 1:])
+                    loss = torch.nn.CrossEntropyLoss()(output, targets)
             # softmax but do not do gradient
-            if targets.shape[1] == 1:
-                with torch.no_grad():
-                    final_output = torch.nn.functional.softmax(output, dim=1)
-            else:
-                # sigmoid but do not do gradient
-                with torch.no_grad():
-                    final_output = torch.clone(output)
-                    final_output[:, 0] = torch.sigmoid(final_output[:, 0])
-            print(final_output, loss)
-            return final_output, loss
+            with torch.no_grad():
+                output = torch.nn.functional.softmax(output, dim=1)
+            return output, loss
 
 
 class BaseOpenPose(torch.nn.Module):

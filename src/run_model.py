@@ -17,7 +17,7 @@ import multiprocessing
 torch.manual_seed(0)
 argp = argparse.ArgumentParser()
 argp.add_argument(
-    "function", help="Choose train or evaluate", default="evaluate"
+    "function", help="Choose train or evaluate"
 )  # TODO: add behavior for pretrain and eval
 argp.add_argument(
     "--writing_params_path",
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     device = torch.cuda.current_device() if torch.cuda.is_available() else "cpu"
     print(device)
     video_transformer = transforms.VideoFilePathToTensor(
-        max_len=22 * 3, fps=3, padding_mode="zero"
+        max_len=22*5, fps=5, padding_mode="last"
     )
     H, W = 256, 256
     transforms = torchvision.transforms.Compose(
@@ -83,8 +83,8 @@ if __name__ == "__main__":
         ]
     )
 
-    labels = ["y_fall_risk_binary", "amm_4", "amm_5", "PES_2", "PES_5"]
-    # labels = ['y_fall_risk']
+    # labels = ["y_fall_risk_binary", "amm_4", "amm_5", "PES_2", "PES_5"]
+    labels = ['y_fall_risk']
 
     if args.function == "pretrain":
         pass
@@ -130,7 +130,7 @@ if __name__ == "__main__":
             )
         elif args.model_name == "Transformer":
             model = model.ResnetTransformer(
-                num_outputs=len(labels),
+                num_outputs=3,
                 L=video_transformer.max_len,
                 H=H,
                 W=W,
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     elif args.function == "evaluate":
         train_dl, val_dl, test_dl = dataloaders.get_vid_data_loaders(
             video_transformer=video_transformer,
-            batch_size=4,
+            batch_size=1,
             val_batch_size=1,
             test_batch_size=1,
             transforms=transforms,
@@ -203,11 +203,10 @@ if __name__ == "__main__":
             )
         elif args.model_name == "Transformer":
             model = model.ResnetTransformer(
-                num_outputs=len(labels),
+                num_outputs=3,
                 L=video_transformer.max_len,
                 H=H,
                 W=W,
-                device=device,
             )
         else:
             raise ValueError(f"Model name {args.model_name} not recognized")
@@ -220,7 +219,7 @@ if __name__ == "__main__":
         torch.set_grad_enabled(False)
         predictions = []
 
-        pbar = tqdm(enumerate(test_dl), total=len(test_dl))
+        pbar = tqdm(enumerate(train_dl), total=len(train_dl))
         # pred_cols = [f'pred_{c}' for c in dataset.targets_sentence.columns] + [f'pred_word_{c}' for c in dataset.targets_words.columns] + [f'pred_{c}' for c in dataset.targets_phones.columns]
         pred_cols = [
             "pred_y_fall_risk_binary",
