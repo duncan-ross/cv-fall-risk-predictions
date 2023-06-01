@@ -52,9 +52,12 @@ if __name__ == "__main__":
         e = "loss argument must be one of 'ce' (cross entropy) "
         e += "or 'weighted_ce (weighted cross entropy)"
         raise ValueError(e)
+    print(f"Weights: {weights}")
     N = probs.shape[0]
     l = -weights[y_true] * np.log(probs[np.arange(N), y_true])
     ce = l.sum() / weights[y_true].sum()
     print(f"(Weighted) Cross-Entropy Loss on Test Set: {ce}")
     print(f"(Weighted) Accuracy on Test Set: {acc}")
-    print(f"Confusion Matrix of Results:\n{conf_mat}\n")
+    print(f"Confusion Matrix of Results:\n{conf_mat}")
+    print("Proportion for Each Risk Level:")
+    print(conf_mat / conf_mat.sum(axis=1).reshape(-1, 1))
