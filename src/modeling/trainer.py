@@ -1,15 +1,9 @@
-"""
-Simple training loop; Boilerplate that could apply to any arbitrary neural network,
-so nothing in this file really has anything to do with GPT specifically.
-"""
-
 import math
 import logging
 
 from tqdm import tqdm
 from functools import partialmethod
 
-#tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
 import numpy as np
 
 import torch
@@ -22,19 +16,16 @@ logger = logging.getLogger(__name__)
 
 
 class TrainerConfig:
-    # optimization parameters
     max_epochs = 10
     batch_size = 64
     learning_rate = 2e-5
     betas = (0.9, 0.95)
     grad_norm_clip = 1.0
-    weight_decay = 0.01  # only applied on matmul weights
-    # learning rate decay params: linear warmup followed by cosine decay to 10% of original
+    weight_decay = 0.01  # Only applied to weight matrices
     lr_decay = False
-    warmup_tokens = 1e6  # these two numbers come from the GPT-3 paper, but may not be good defaults elsewhere
-    final_tokens = 260e9  # (at what point we reach 10% of original LR)
-    # checkpoint settings
-    # checkpoint settings
+    # Toying with warmup--didn't end up using LR decay
+    warmup_tokens = 1e5 
+    final_tokens = 1e10
     ckpt_path = None
     num_workers = 0  # for DataLoaderx
     writer = None
@@ -62,7 +53,6 @@ class Trainer:
         self.losses = []
         self.optimizer = self.create_optimizer()
 
-        # take over whatever gpus are on the system
         self.device = "cpu"
         if torch.cuda.is_available():
             self.device = torch.cuda.current_device()
@@ -86,7 +76,6 @@ class Trainer:
     def create_optimizer(self):
         model, config = self.model, self.config
 
-        # create the optimizer
         no_decay = ["bias", "LayerNorm.weight"]
         params_decay = [
             p
@@ -118,17 +107,15 @@ class Trainer:
         )
         losses = []
         for it, (id, x, y) in pbar:
-            # place data on the correct device
-            if type(x) == tuple: #TODO DUNCAN
+            if type(x) == tuple: 
                 x = tuple(xx.to(self.device) for xx in x)
             else:
                 x = x.to(self.device)
-            if type(y) == list or type(y) == tuple:#TODO DUNCAN
+            if type(y) == list or type(y) == tuple:
                 y = [yy.to(self.device) for yy in y]
             else:
                 y = y.to(torch.float32).to(self.device)
 
-            # forward the model
             if is_train:
                 model.train()
             else:
@@ -137,7 +124,6 @@ class Trainer:
                 logits, loss = model(x, y, median_freq_weights=self.median_freq_weights)
                 losses.append(loss.item())
             if is_train:
-                # backprop and update the parameters
                 model.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(
@@ -146,21 +132,20 @@ class Trainer:
                 self.optimizer.step()
 
                 lr = config.learning_rate
-                # decay the learning rate based on our progress
                 if config.lr_decay:
                     if type(y) == list:
                         self.tokens += (y[0] >= 0).sum()
                     else:
                         self.tokens += (
                             y >= 0
-                        ).sum()  # number of tokens processed this step (i.e. label is not -100)
+                        ).sum()
+                    # Still warmup for LR
                     if self.tokens < config.warmup_tokens:
-                        # linear warmup
                         lr_mult = float(self.tokens) / float(
                             max(1, config.warmup_tokens)
                         )
+                    # Cosine LR decay
                     else:
-                        # cosine learning rate decay
                         progress = float(self.tokens - config.warmup_tokens) / float(
                             max(1, config.final_tokens - config.warmup_tokens)
                         )
@@ -168,13 +153,14 @@ class Trainer:
                     lr = config.learning_rate * lr_mult
                     for param_group in self.optimizer.param_groups:
                         param_group["lr"] = lr
+                # No LR Decay: Don't change LR
                 else:
                     lr = config.learning_rate
-                # report progress
                 pbar.set_description(
                     f"epoch {step+1} iter {it}: train loss {loss.item():.5f}. lr {lr:e}"
                 )
 
+                # Write results to file
                 if config.writer is not None:
                     config.writer.add_scalar("train/loss", loss.item(), step)
                     config.writer.add_scalar("train/lr", lr, step)
