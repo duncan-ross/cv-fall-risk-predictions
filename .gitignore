@@ -7,5 +7,7 @@
 *.mot
 *.sto
 *.trc
+code.zip
+zip.ipynb
 expt/
 .DS_Store
